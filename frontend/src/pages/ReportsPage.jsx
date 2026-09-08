@@ -221,7 +221,9 @@ export default function ReportsPage() {
     <div>
       <div className="page-header">
         <h1>Reports</h1>
-        <button className="btn btn-outline-primary btn-sm" onClick={handleExportCSV}>Export All CSV</button>
+        <button className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1" onClick={handleExportCSV}>
+          <i className="bi bi-download"></i> Export All CSV
+        </button>
       </div>
 
       <AlertMessage message={error} onClose={() => setError('')} />

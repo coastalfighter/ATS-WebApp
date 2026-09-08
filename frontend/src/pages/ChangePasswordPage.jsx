@@ -31,12 +31,13 @@ export default function ChangePasswordPage() {
 
   return (
     <div>
-      <h4 className="mb-4">Change Password</h4>
+      <div className="page-header">
+        <h1>Change Password</h1>
+      </div>
       <AlertMessage type="success" message={success} onClose={() => setSuccess('')} />
       <AlertMessage message={error} onClose={() => setError('')} />
 
-      <div className="card" style={{ maxWidth: '500px' }}>
-        <div className="card-body">
+      <div className="table-container p-4" style={{ maxWidth: '500px' }}>
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label className="form-label">Current Password</label>
@@ -56,9 +57,10 @@ export default function ChangePasswordPage() {
                 value={form.new_password_confirm}
                 onChange={(e) => setForm({ ...form, new_password_confirm: e.target.value })} />
             </div>
-            <button type="submit" className="btn btn-primary btn-sm">Change Password</button>
+            <button type="submit" className="btn btn-primary btn-sm d-flex align-items-center gap-1">
+              <i className="bi bi-shield-check"></i> Change Password
+            </button>
           </form>
-        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { candidatesAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Pagination from '../components/common/Pagination';
-import { getStatusLabel, getStatusBadgeClass, formatDate } from '../utils/statusHelpers';
+import { STATUS_LABELS, getStatusBadgeClass, formatDate } from '../utils/statusHelpers';
 
 export default function DuplicateReviewPage() {
   const navigate = useNavigate();
@@ -31,9 +31,9 @@ export default function DuplicateReviewPage() {
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h4 className="mb-0">Duplicate Review</h4>
-        <span className="badge bg-secondary fs-6">{count} duplicates</span>
+      <div className="page-header">
+        <h1>Duplicate Review</h1>
+        <span className="badge bg-secondary">{count} duplicates</span>
       </div>
 
       <div className="table-container">
@@ -58,7 +58,7 @@ export default function DuplicateReviewPage() {
                 <td><strong>{c.first_name} {c.last_name}</strong></td>
                 <td><small>{c.email}</small></td>
                 <td><small>{c.phone}</small></td>
-                <td><span className={getStatusBadgeClass(c.current_status)}>{getStatusLabel(c.current_status)}</span></td>
+                <td><span className={getStatusBadgeClass(c.current_status)}>{STATUS_LABELS[c.current_status] || c.current_status}</span></td>
                 <td><small>{c.source || '-'}</small></td>
                 <td><small>{formatDate(c.created_at)}</small></td>
               </tr>

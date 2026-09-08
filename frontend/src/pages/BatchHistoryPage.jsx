@@ -39,12 +39,16 @@ export default function BatchHistoryPage() {
 
   return (
     <div>
-      <div className="page-header"><h1>Upload Batch History</h1></div>
+      <div className="page-header">
+        <h1>Upload Batch History</h1>
+      </div>
       <AlertMessage message={error} onClose={() => setError('')} />
 
       {selectedBatch ? (
         <div>
-          <button className="btn btn-outline-secondary btn-sm mb-3" onClick={() => setSelectedBatch(null)}>Back to list</button>
+          <button className="btn btn-outline-secondary btn-sm mb-3 d-flex align-items-center gap-1" onClick={() => setSelectedBatch(null)}>
+            <i className="bi bi-arrow-left"></i> Back to list
+          </button>
           <div className="table-container p-3 mb-3">
             <h6>Batch #{selectedBatch.id} - {selectedBatch.file_name}</h6>
             <div className="row g-3 mt-2">

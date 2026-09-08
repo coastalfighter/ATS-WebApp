@@ -1,10 +1,12 @@
 export default function LoadingSpinner({ text = 'Loading...' }) {
   return (
-    <div className="d-flex justify-content-center align-items-center py-5">
-      <div className="spinner-border text-primary me-2" role="status">
-        <span className="visually-hidden">{text}</span>
+    <div className="loading-container">
+      <div className="spinner-dots">
+        <span></span>
+        <span></span>
+        <span></span>
       </div>
-      <span className="text-muted">{text}</span>
+      <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500 }}>{text}</span>
     </div>
   );
 }

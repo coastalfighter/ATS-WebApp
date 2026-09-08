@@ -95,10 +95,14 @@ export default function UserManagementPage() {
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h4 className="mb-0">User Management</h4>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowCreateForm(!showCreateForm)}>
-          {showCreateForm ? 'Cancel' : 'Create User'}
+      <div className="page-header">
+        <h1>User Management</h1>
+        <button className="btn btn-primary btn-sm d-flex align-items-center gap-1" onClick={() => setShowCreateForm(!showCreateForm)}>
+          {showCreateForm ? (
+            <><i className="bi bi-x-lg"></i> Cancel</>
+          ) : (
+            <><i className="bi bi-person-plus"></i> Create User</>
+          )}
         </button>
       </div>
 

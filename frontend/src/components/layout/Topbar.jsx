@@ -3,28 +3,32 @@ import { useAuth } from '../../context/AuthContext';
 export default function Topbar({ onToggleSidebar }) {
   const { user, logout } = useAuth();
 
+  const getInitials = () => {
+    const first = user?.first_name?.charAt(0) || '';
+    const last = user?.last_name?.charAt(0) || '';
+    return (first + last).toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || '?';
+  };
+
   return (
     <div className="topbar">
-      <div className="d-flex align-items-center">
-        <button
-          className="btn btn-link text-dark d-md-none me-2 p-0"
-          onClick={onToggleSidebar}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
+      <div className="topbar-left">
+        <button className="hamburger-btn" onClick={onToggleSidebar}>
+          <i className="bi bi-list" style={{ fontSize: '1.5rem' }}></i>
         </button>
-        <span className="text-muted d-none d-md-inline">Welcome back!</span>
+        <div className="topbar-greeting d-none d-md-block">
+          Welcome back, <strong>{user?.first_name || user?.username}</strong>
+        </div>
       </div>
-      <div className="d-flex align-items-center gap-3">
-        <span className="text-dark fw-medium">
-          {user?.full_name || user?.username}
-        </span>
-        <span className="badge bg-primary text-capitalize">{user?.role}</span>
-        <button className="btn btn-outline-secondary btn-sm" onClick={logout}>
-          Logout
+      <div className="topbar-right">
+        <div className="topbar-avatar">{getInitials()}</div>
+        <div className="topbar-user-info d-none d-sm-flex">
+          <span className="topbar-user-name">{user?.full_name || user?.username}</span>
+          <span className="topbar-user-role">{user?.role}</span>
+        </div>
+        <div className="topbar-divider d-none d-sm-block"></div>
+        <button className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onClick={logout}>
+          <i className="bi bi-box-arrow-right"></i>
+          <span className="d-none d-md-inline">Logout</span>
         </button>
       </div>
     </div>

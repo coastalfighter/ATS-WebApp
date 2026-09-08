@@ -70,12 +70,14 @@ export default function UploadCandidatesPage() {
                 Optional columns: alternate_phone, source
               </div>
               <div className="d-flex gap-2">
-                <button className="btn btn-outline-primary" onClick={handlePreview}
+                <button className="btn btn-outline-primary d-flex align-items-center gap-1" onClick={handlePreview}
                   disabled={!file || uploading}>
+                  <i className="bi bi-eye"></i>
                   {uploading && !preview ? 'Loading...' : 'Preview'}
                 </button>
                 {preview && (
-                  <button className="btn btn-primary" onClick={handleUpload} disabled={uploading}>
+                  <button className="btn btn-primary d-flex align-items-center gap-1" onClick={handleUpload} disabled={uploading}>
+                    <i className="bi bi-cloud-arrow-up"></i>
                     {uploading ? 'Uploading...' : `Import ${preview.total_rows} rows`}
                   </button>
                 )}
@@ -142,8 +144,12 @@ export default function UploadCandidatesPage() {
             </div>
           )}
           <div className="mt-3 d-flex gap-2">
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('/candidates/fresh')}>View Fresh Candidates</button>
-            <button className="btn btn-outline-secondary btn-sm" onClick={() => { setFile(null); setResult(null); }}>Upload Another</button>
+            <button className="btn btn-primary btn-sm d-flex align-items-center gap-1" onClick={() => navigate('/candidates/fresh')}>
+              <i className="bi bi-eye"></i> View Fresh Candidates
+            </button>
+            <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onClick={() => { setFile(null); setResult(null); }}>
+              <i className="bi bi-arrow-repeat"></i> Upload Another
+            </button>
           </div>
         </div>
       )}

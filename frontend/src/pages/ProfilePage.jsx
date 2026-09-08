@@ -27,12 +27,13 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <h4 className="mb-4">My Profile</h4>
+      <div className="page-header">
+        <h1>My Profile</h1>
+      </div>
       <AlertMessage type="success" message={success} onClose={() => setSuccess('')} />
       <AlertMessage message={error} onClose={() => setError('')} />
 
-      <div className="card" style={{ maxWidth: '600px' }}>
-        <div className="card-body">
+      <div className="table-container p-4" style={{ maxWidth: '600px' }}>
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label className="form-label">Username</label>
@@ -40,7 +41,7 @@ export default function ProfilePage() {
             </div>
             <div className="mb-3">
               <label className="form-label">Role</label>
-              <input className="form-control form-control-sm" value={user?.role || ''} disabled />
+              <input className="form-control form-control-sm text-capitalize" value={user?.role || ''} disabled />
             </div>
             <div className="row g-2 mb-3">
               <div className="col-md-6">
@@ -68,9 +69,10 @@ export default function ProfilePage() {
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
-            <button type="submit" className="btn btn-primary btn-sm">Update Profile</button>
+            <button type="submit" className="btn btn-primary btn-sm d-flex align-items-center gap-1">
+              <i className="bi bi-check-lg"></i> Update Profile
+            </button>
           </form>
-        </div>
       </div>
     </div>
   );

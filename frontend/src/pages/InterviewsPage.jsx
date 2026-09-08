@@ -55,7 +55,9 @@ export default function InterviewsPage() {
 
   return (
     <div>
-      <div className="page-header"><h1>Interviews</h1></div>
+      <div className="page-header">
+        <h1>Interviews</h1>
+      </div>
 
       <AlertMessage type="success" message={success} onClose={() => setSuccess('')} />
       <AlertMessage message={error} onClose={() => setError('')} />

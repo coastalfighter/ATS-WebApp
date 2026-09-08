@@ -196,7 +196,9 @@ export default function CandidateDetailPage() {
             </span>
           </div>
         </div>
-        <button className="btn btn-outline-secondary btn-sm" onClick={() => navigate(-1)}>Back</button>
+        <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onClick={() => navigate(-1)}>
+          <i className="bi bi-arrow-left"></i> Back
+        </button>
       </div>
 
       <AlertMessage type="success" message={success} onClose={() => setSuccess('')} />

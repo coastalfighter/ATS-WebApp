@@ -28,37 +28,56 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h2>ATS Login</h2>
-        <p className="subtitle">Applicant Tracking System</p>
+        <div className="login-logo">
+          <i className="bi bi-people-fill"></i>
+        </div>
+        <h2>Welcome Back</h2>
+        <p className="subtitle">Sign in to ATS System</p>
         <AlertMessage message={error} onClose={() => setError('')} />
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label className="form-label">Username</label>
-            <input
-              type="text"
-              className="form-control"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoFocus
-            />
+            <div className="position-relative">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
           </div>
-          <div className="mb-3">
+          <div className="mb-4">
             <label className="form-label">Password</label>
-            <input
-              type="password"
-              className="form-control"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="position-relative">
+              <input
+                type="password"
+                className="form-control"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
           </div>
           <button
             type="submit"
-            className="btn btn-primary w-100"
+            className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
             disabled={loading}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm" role="status"></span>
+                Signing in...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-box-arrow-in-right"></i>
+                Sign In
+              </>
+            )}
           </button>
         </form>
       </div>

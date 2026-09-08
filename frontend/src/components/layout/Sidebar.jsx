@@ -8,42 +8,72 @@ export default function Sidebar({ show, onClose }) {
     `sidebar-link ${isActive ? 'active' : ''}`;
 
   return (
-    <div className={`sidebar ${show ? 'show' : ''}`}>
-      <div className="sidebar-brand">ATS System</div>
-      <nav className="sidebar-nav">
-        <div className="sidebar-section">Main</div>
-        <NavLink to="/" className={linkClass} end onClick={onClose}>Dashboard</NavLink>
+    <>
+      <div className={`sidebar ${show ? 'show' : ''}`}>
+        <div className="sidebar-brand">
+          <div className="brand-icon">
+            <i className="bi bi-people-fill"></i>
+          </div>
+          ATS System
+        </div>
+        <nav className="sidebar-nav">
+          <div className="sidebar-section">Main</div>
+          <NavLink to="/" className={linkClass} end onClick={onClose}>
+            <i className="bi bi-grid-1x2-fill"></i> Dashboard
+          </NavLink>
 
-        <div className="sidebar-section">Candidates</div>
-        <NavLink to="/candidates/fresh" className={linkClass} onClick={onClose}>Fresh Candidates</NavLink>
-        <NavLink to="/candidates/pipeline" className={linkClass} onClick={onClose}>Pipeline</NavLink>
-        <NavLink to="/candidates/upload" className={linkClass} onClick={onClose}>Upload CSV/XLSX</NavLink>
-        <NavLink to="/candidates/batches" className={linkClass} onClick={onClose}>Batch History</NavLink>
-        {isAdminOrSubadmin && (
-          <NavLink to="/candidates/duplicates" className={linkClass} onClick={onClose}>Duplicates</NavLink>
-        )}
+          <div className="sidebar-section">Candidates</div>
+          <NavLink to="/candidates/fresh" className={linkClass} onClick={onClose}>
+            <i className="bi bi-person-lines-fill"></i> Fresh Candidates
+          </NavLink>
+          <NavLink to="/candidates/pipeline" className={linkClass} onClick={onClose}>
+            <i className="bi bi-funnel-fill"></i> Pipeline
+          </NavLink>
+          <NavLink to="/candidates/upload" className={linkClass} onClick={onClose}>
+            <i className="bi bi-cloud-arrow-up-fill"></i> Upload CSV/XLSX
+          </NavLink>
+          <NavLink to="/candidates/batches" className={linkClass} onClick={onClose}>
+            <i className="bi bi-clock-history"></i> Batch History
+          </NavLink>
+          {isAdminOrSubadmin && (
+            <NavLink to="/candidates/duplicates" className={linkClass} onClick={onClose}>
+              <i className="bi bi-files"></i> Duplicates
+            </NavLink>
+          )}
 
-        <div className="sidebar-section">Scheduling</div>
-        <NavLink to="/interviews" className={linkClass} onClick={onClose}>Interviews</NavLink>
+          <div className="sidebar-section">Scheduling</div>
+          <NavLink to="/interviews" className={linkClass} onClick={onClose}>
+            <i className="bi bi-camera-video-fill"></i> Interviews
+          </NavLink>
 
-        {isAdminOrSubadmin && (
-          <>
-            <div className="sidebar-section">Analytics</div>
-            <NavLink to="/reports" className={linkClass} onClick={onClose}>Reports</NavLink>
-          </>
-        )}
+          {isAdminOrSubadmin && (
+            <>
+              <div className="sidebar-section">Analytics</div>
+              <NavLink to="/reports" className={linkClass} onClick={onClose}>
+                <i className="bi bi-bar-chart-line-fill"></i> Reports
+              </NavLink>
+            </>
+          )}
 
-        {isAdminOrSubadmin && (
-          <>
-            <div className="sidebar-section">Administration</div>
-            <NavLink to="/users" className={linkClass} onClick={onClose}>User Management</NavLink>
-          </>
-        )}
+          {isAdminOrSubadmin && (
+            <>
+              <div className="sidebar-section">Administration</div>
+              <NavLink to="/users" className={linkClass} onClick={onClose}>
+                <i className="bi bi-shield-lock-fill"></i> User Management
+              </NavLink>
+            </>
+          )}
 
-        <div className="sidebar-section">Account</div>
-        <NavLink to="/profile" className={linkClass} onClick={onClose}>Profile</NavLink>
-        <NavLink to="/change-password" className={linkClass} onClick={onClose}>Change Password</NavLink>
-      </nav>
-    </div>
+          <div className="sidebar-section">Account</div>
+          <NavLink to="/profile" className={linkClass} onClick={onClose}>
+            <i className="bi bi-person-circle"></i> Profile
+          </NavLink>
+          <NavLink to="/change-password" className={linkClass} onClick={onClose}>
+            <i className="bi bi-key-fill"></i> Change Password
+          </NavLink>
+        </nav>
+      </div>
+      {show && <div className="sidebar-overlay" onClick={onClose} />}
+    </>
   );
 }

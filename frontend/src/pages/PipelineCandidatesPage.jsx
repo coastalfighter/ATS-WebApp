@@ -78,7 +78,9 @@ export default function PipelineCandidatesPage() {
             </select>
           </div>
           <div className="col-md-2">
-            <button type="submit" className="btn btn-outline-primary btn-sm w-100">Search</button>
+            <button type="submit" className="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1">
+              <i className="bi bi-search"></i> Search
+            </button>
           </div>
         </form>
       </div>

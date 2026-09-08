@@ -50,8 +50,8 @@ export default function FreshCandidatesPage() {
     <div>
       <div className="page-header">
         <h1>Fresh Candidates</h1>
-        <button className="btn btn-primary btn-sm" onClick={() => navigate('/candidates/upload')}>
-          Upload CSV/XLSX
+        <button className="btn btn-primary btn-sm d-flex align-items-center gap-1" onClick={() => navigate('/candidates/upload')}>
+          <i className="bi bi-cloud-arrow-up"></i> Upload CSV/XLSX
         </button>
       </div>
 
@@ -81,7 +81,9 @@ export default function FreshCandidatesPage() {
             </select>
           </div>
           <div className="col-md-2">
-            <button type="submit" className="btn btn-outline-primary btn-sm w-100">Search</button>
+            <button type="submit" className="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1">
+              <i className="bi bi-search"></i> Search
+            </button>
           </div>
         </form>
       </div>
