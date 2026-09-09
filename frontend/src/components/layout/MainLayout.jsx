@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import CommandPalette from '../common/CommandPalette';
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,6 +14,7 @@ export default function MainLayout() {
       <div className="main-content">
         <Outlet />
       </div>
+      <CommandPalette />
     </>
   );
 }

@@ -48,6 +48,9 @@ export default function Sidebar({ show, onClose }) {
           <NavLink to="/interviews" className={linkClass} onClick={onClose}>
             <i className="bi bi-camera-video-fill"></i> Interviews
           </NavLink>
+          <NavLink to="/calendar" className={linkClass} onClick={onClose}>
+            <i className="bi bi-calendar3"></i> Calendar
+          </NavLink>
 
           {isAdminOrSubadmin && (
             <>
@@ -66,6 +69,12 @@ export default function Sidebar({ show, onClose }) {
               </NavLink>
               <NavLink to="/settings" className={linkClass} onClick={onClose}>
                 <i className="bi bi-gear-fill"></i> Settings
+              </NavLink>
+              <NavLink to="/audit" className={linkClass} onClick={onClose}>
+                <i className="bi bi-journal-text"></i> Audit Log
+              </NavLink>
+              <NavLink to="/email-logs" className={linkClass} onClick={onClose}>
+                <i className="bi bi-envelope"></i> Email Logs
               </NavLink>
             </>
           )}

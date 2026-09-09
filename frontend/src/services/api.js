@@ -85,6 +85,7 @@ export const candidatesAPI = {
   getAssignmentHistory: (id) => api.get(`/candidates/${id}/assignment_history/`),
   setFollowUp: (id, data) => api.post(`/candidates/${id}/set_follow_up/`, data),
   statusOptions: (params) => api.get('/candidates/status_options/', { params }),
+  activityLog: (params) => api.get('/candidates/activity-log/', { params }),
   upload: (formData) => api.post('/candidates/upload/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),

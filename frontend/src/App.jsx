@@ -15,6 +15,9 @@ import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
 import DuplicateReviewPage from './pages/DuplicateReviewPage';
 import AdminSettingsPage from './pages/AdminSettingsPage';
+import CalendarPage from './pages/CalendarPage';
+import AuditLogPage from './pages/AuditLogPage';
+import EmailLogsPage from './pages/EmailLogsPage';
 import ProfilePage from './pages/ProfilePage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 
@@ -40,6 +43,7 @@ function AppRoutes() {
         } />
         <Route path="/candidates/:id" element={<CandidateDetailPage />} />
         <Route path="/interviews" element={<InterviewsPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/reports" element={
           <ProtectedRoute roles={['admin', 'subadmin']}><ReportsPage /></ProtectedRoute>
         } />
@@ -48,6 +52,12 @@ function AppRoutes() {
         } />
         <Route path="/settings" element={
           <ProtectedRoute roles={['admin', 'subadmin']}><AdminSettingsPage /></ProtectedRoute>
+        } />
+        <Route path="/audit" element={
+          <ProtectedRoute roles={['admin', 'subadmin']}><AuditLogPage /></ProtectedRoute>
+        } />
+        <Route path="/email-logs" element={
+          <ProtectedRoute roles={['admin', 'subadmin']}><EmailLogsPage /></ProtectedRoute>
         } />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
