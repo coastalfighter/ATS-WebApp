@@ -20,6 +20,15 @@ export default function Topbar({ onToggleSidebar }) {
         </div>
       </div>
       <div className="topbar-right">
+        <button className="btn btn-sm btn-outline-secondary d-none d-md-flex align-items-center gap-1"
+          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', {key:'k', ctrlKey:true}))}
+          style={{fontSize:'0.75rem', padding:'0.25rem 0.6rem', opacity:0.7}}>
+          <i className="bi bi-search" style={{fontSize:'0.7rem'}}></i>
+          <kbd style={{background:'transparent',border:'1px solid var(--border)',borderRadius:'3px',padding:'0 4px',fontSize:'0.65rem',fontFamily:'inherit'}}>
+            {navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+K
+          </kbd>
+        </button>
+        <div className="topbar-divider d-none d-md-block"></div>
         <div className="topbar-avatar">{getInitials()}</div>
         <div className="topbar-user-info d-none d-sm-flex">
           <span className="topbar-user-name">{user?.full_name || user?.username}</span>
