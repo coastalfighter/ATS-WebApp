@@ -6,6 +6,34 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import { STATUS_LABELS, formatDateTime } from '../utils/statusHelpers';
 
+function HorizontalBar({ items, labelKey, valueKey, colorVar }) {
+  if (!items || items.length === 0) return null;
+  const max = Math.max(...items.map(i => i[valueKey] || 0), 1);
+  return (
+    <div>
+      {items.map((item, i) => (
+        <div key={i} className="d-flex align-items-center gap-2 mb-2">
+          <div style={{ width: '120px', fontSize: '0.78rem', textAlign: 'right' }} className="text-truncate text-muted">
+            {typeof labelKey === 'function' ? labelKey(item) : item[labelKey]}
+          </div>
+          <div className="flex-grow-1">
+            <div style={{
+              height: '20px', borderRadius: '4px',
+              width: `${Math.max(((item[valueKey] || 0) / max) * 100, 3)}%`,
+              background: colorVar || 'var(--primary)',
+              transition: 'width 0.4s ease',
+              display: 'flex', alignItems: 'center', paddingLeft: '6px',
+              color: '#fff', fontSize: '0.72rem', fontWeight: 600,
+            }}>
+              {item[valueKey]}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, isAdminOrSubadmin } = useAuth();
   const navigate = useNavigate();
@@ -13,9 +41,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useEffect(() => { loadDashboard(); }, []);
 
   const loadDashboard = async () => {
     try {
@@ -57,7 +83,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="col-md-3 col-6">
-              <div className="stat-card stat-card-accent-info">
+              <div className="stat-card stat-card-accent-info cursor-pointer" onClick={() => navigate('/candidates/all')}>
                 <div className="stat-icon info"><i className="bi bi-people-fill"></i></div>
                 <div className="stat-value">{data?.total_candidates || 0}</div>
                 <div className="stat-label">Total Candidates</div>
@@ -74,14 +100,14 @@ export default function DashboardPage() {
         ) : (
           <>
             <div className="col-md-3 col-6">
-              <div className="stat-card stat-card-accent-primary">
+              <div className="stat-card stat-card-accent-primary cursor-pointer" onClick={() => navigate('/candidates/fresh')}>
                 <div className="stat-icon primary"><i className="bi bi-person-plus-fill"></i></div>
                 <div className="stat-value">{data?.fresh_count || 0}</div>
                 <div className="stat-label">Fresh Assigned</div>
               </div>
             </div>
             <div className="col-md-3 col-6">
-              <div className="stat-card stat-card-accent-success">
+              <div className="stat-card stat-card-accent-success cursor-pointer" onClick={() => navigate('/candidates/pipeline')}>
                 <div className="stat-icon success"><i className="bi bi-funnel-fill"></i></div>
                 <div className="stat-value">{data?.pipeline_count || 0}</div>
                 <div className="stat-label">In Pipeline</div>
@@ -113,17 +139,14 @@ export default function DashboardPage() {
                 <i className="bi bi-pie-chart-fill" style={{ color: 'var(--primary)' }}></i>
                 <h6 className="mb-0">Status Breakdown</h6>
               </div>
-              <table className="table table-sm">
-                <thead><tr><th>Status</th><th className="text-end">Count</th></tr></thead>
-                <tbody>
-                  {data.status_breakdown.map((item, i) => (
-                    <tr key={i}>
-                      <td>{STATUS_LABELS[item.current_status] || item.current_status}</td>
-                      <td className="text-end">{item.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="p-3">
+                <HorizontalBar
+                  items={data.status_breakdown}
+                  labelKey={(i) => STATUS_LABELS[i.current_status] || i.current_status}
+                  valueKey="count"
+                  colorVar="var(--primary)"
+                />
+              </div>
             </div>
           </div>
           <div className="col-md-6">
@@ -132,7 +155,15 @@ export default function DashboardPage() {
                 <i className="bi bi-person-badge-fill" style={{ color: 'var(--primary)' }}></i>
                 <h6 className="mb-0">Recruiter Stats</h6>
               </div>
-              <table className="table table-sm">
+              <div className="p-3">
+                <HorizontalBar
+                  items={data.recruiter_stats || []}
+                  labelKey={(r) => `${r.assigned_recruiter__first_name || ''} ${r.assigned_recruiter__last_name || ''}`}
+                  valueKey="total"
+                  colorVar="#6366f1"
+                />
+              </div>
+              <table className="table table-sm mb-0">
                 <thead><tr><th>Recruiter</th><th className="text-end">Total</th><th className="text-end">Fresh</th><th className="text-end">Pipeline</th></tr></thead>
                 <tbody>
                   {(data.recruiter_stats || []).map((r, i) => (

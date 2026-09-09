@@ -29,6 +29,9 @@ export default function Sidebar({ show, onClose }) {
           <NavLink to="/candidates/pipeline" className={linkClass} onClick={onClose}>
             <i className="bi bi-funnel-fill"></i> Pipeline
           </NavLink>
+          <NavLink to="/candidates/all" className={linkClass} onClick={onClose}>
+            <i className="bi bi-people-fill"></i> All Candidates
+          </NavLink>
           <NavLink to="/candidates/upload" className={linkClass} onClick={onClose}>
             <i className="bi bi-cloud-arrow-up-fill"></i> Upload CSV/XLSX
           </NavLink>
@@ -60,6 +63,9 @@ export default function Sidebar({ show, onClose }) {
               <div className="sidebar-section">Administration</div>
               <NavLink to="/users" className={linkClass} onClick={onClose}>
                 <i className="bi bi-shield-lock-fill"></i> User Management
+              </NavLink>
+              <NavLink to="/settings" className={linkClass} onClick={onClose}>
+                <i className="bi bi-gear-fill"></i> Settings
               </NavLink>
             </>
           )}

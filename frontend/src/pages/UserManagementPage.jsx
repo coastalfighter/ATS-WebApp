@@ -15,6 +15,8 @@ export default function UserManagementPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [resetPasswordData, setResetPasswordData] = useState(null);
   const [newPassword, setNewPassword] = useState('');
+  const [editingUser, setEditingUser] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   const [form, setForm] = useState({
     username: '', email: '', first_name: '', last_name: '',
@@ -91,13 +93,40 @@ export default function UserManagementPage() {
     }
   };
 
+  const openEdit = (u) => {
+    setEditingUser(u);
+    setEditForm({
+      first_name: u.first_name || '', last_name: u.last_name || '',
+      email: u.email || '', phone: u.phone || '', role: u.role,
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editingUser) return;
+    setError(''); setSuccess('');
+    try {
+      await usersAPI.update(editingUser.id, editForm);
+      setSuccess(`User "${editingUser.username}" updated.`);
+      setEditingUser(null);
+      fetchUsers();
+    } catch (err) {
+      const data = err.response?.data;
+      if (data) {
+        const msgs = Object.entries(data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`);
+        setError(msgs.join(' | '));
+      } else {
+        setError('Failed to update user.');
+      }
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
     <div>
       <div className="page-header">
         <h1>User Management</h1>
-        <button className="btn btn-primary btn-sm d-flex align-items-center gap-1" onClick={() => setShowCreateForm(!showCreateForm)}>
+        <button className="btn btn-primary btn-sm d-flex align-items-center gap-1" onClick={() => { setShowCreateForm(!showCreateForm); setEditingUser(null); }}>
           {showCreateForm ? (
             <><i className="bi bi-x-lg"></i> Cancel</>
           ) : (
@@ -166,6 +195,54 @@ export default function UserManagementPage() {
         </div>
       )}
 
+      {editingUser && (
+        <div className="card mb-4">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <h6 className="mb-0">Edit User: {editingUser.username}</h6>
+              <button className="btn-close" onClick={() => setEditingUser(null)}></button>
+            </div>
+            <div className="row g-2">
+              <div className="col-md-3">
+                <label className="form-label">First Name</label>
+                <input className="form-control form-control-sm" value={editForm.first_name}
+                  onChange={(e) => setEditForm({...editForm, first_name: e.target.value})} />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Last Name</label>
+                <input className="form-control form-control-sm" value={editForm.last_name}
+                  onChange={(e) => setEditForm({...editForm, last_name: e.target.value})} />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Email</label>
+                <input type="email" className="form-control form-control-sm" value={editForm.email}
+                  onChange={(e) => setEditForm({...editForm, email: e.target.value})} />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Phone</label>
+                <input className="form-control form-control-sm" value={editForm.phone}
+                  onChange={(e) => setEditForm({...editForm, phone: e.target.value})} />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Role</label>
+                <select className="form-select form-select-sm" value={editForm.role}
+                  onChange={(e) => setEditForm({...editForm, role: e.target.value})}>
+                  <option value="recruiter">Recruiter</option>
+                  <option value="subadmin">Subadmin</option>
+                  {isAdmin && <option value="admin">Admin</option>}
+                </select>
+              </div>
+              <div className="col-md-3 d-flex align-items-end">
+                <div className="d-flex gap-2">
+                  <button className="btn btn-primary btn-sm" onClick={handleEditSave}>Save</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEditingUser(null)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {resetPasswordData && (
         <div className="card mb-4">
           <div className="card-body">
@@ -203,6 +280,7 @@ export default function UserManagementPage() {
               <th>Username</th>
               <th>Name</th>
               <th>Email</th>
+              <th>Phone</th>
               <th>Role</th>
               <th>Status</th>
               <th>Created</th>
@@ -216,6 +294,7 @@ export default function UserManagementPage() {
                 <td>{u.username}</td>
                 <td>{u.full_name || `${u.first_name} ${u.last_name}`}</td>
                 <td><small>{u.email}</small></td>
+                <td><small>{u.phone || '-'}</small></td>
                 <td><span className="badge bg-secondary">{u.role}</span></td>
                 <td>
                   <span className={`badge ${u.is_active ? 'bg-success' : 'bg-danger'}`}>
@@ -225,14 +304,18 @@ export default function UserManagementPage() {
                 <td><small>{formatDate(u.created_at)}</small></td>
                 <td>
                   <div className="btn-group btn-group-sm">
+                    <button className="btn btn-outline-primary" title="Edit"
+                      onClick={() => { openEdit(u); setShowCreateForm(false); }}>
+                      <i className="bi bi-pencil"></i>
+                    </button>
                     <button className={`btn ${u.is_active ? 'btn-outline-danger' : 'btn-outline-success'}`}
-                      onClick={() => handleToggleActive(u.id)}>
-                      {u.is_active ? 'Deactivate' : 'Activate'}
+                      onClick={() => handleToggleActive(u.id)} title={u.is_active ? 'Deactivate' : 'Activate'}>
+                      <i className={`bi ${u.is_active ? 'bi-person-x' : 'bi-person-check'}`}></i>
                     </button>
                     {isAdmin && (
-                      <button className="btn btn-outline-warning"
+                      <button className="btn btn-outline-warning" title="Reset Password"
                         onClick={() => setResetPasswordData(u)}>
-                        Reset Pwd
+                        <i className="bi bi-key"></i>
                       </button>
                     )}
                   </div>

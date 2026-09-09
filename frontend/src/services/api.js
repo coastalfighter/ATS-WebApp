@@ -114,14 +114,14 @@ export const dashboardAPI = {
 };
 
 export const reportsAPI = {
-  recruiterWise: () => api.get('/reports/recruiter-wise/'),
-  contactedVsUncontacted: () => api.get('/reports/contacted-vs-uncontacted/'),
-  freshToPipeline: () => api.get('/reports/fresh-to-pipeline/'),
-  negativeBreakdown: () => api.get('/reports/negative-breakdown/'),
-  followUpPending: () => api.get('/reports/follow-up-pending/'),
-  pipelineStages: () => api.get('/reports/pipeline-stages/'),
-  uploadBatchSummary: () => api.get('/reports/upload-batch-summary/'),
-  duplicates: () => api.get('/reports/duplicates/'),
+  recruiterWise: (params) => api.get('/reports/recruiter-wise/', { params }),
+  contactedVsUncontacted: (params) => api.get('/reports/contacted-vs-uncontacted/', { params }),
+  freshToPipeline: (params) => api.get('/reports/fresh-to-pipeline/', { params }),
+  negativeBreakdown: (params) => api.get('/reports/negative-breakdown/', { params }),
+  followUpPending: (params) => api.get('/reports/follow-up-pending/', { params }),
+  pipelineStages: (params) => api.get('/reports/pipeline-stages/', { params }),
+  uploadBatchSummary: (params) => api.get('/reports/upload-batch-summary/', { params }),
+  duplicates: (params) => api.get('/reports/duplicates/', { params }),
   dailyTrends: (params) => api.get('/reports/daily-trends/', { params }),
   recruiterProductivity: (params) => api.get('/reports/recruiter-productivity/', { params }),
   exportCSV: (params) => api.get('/reports/export-csv/', { params, responseType: 'blob' }),

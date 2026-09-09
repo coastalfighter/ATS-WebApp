@@ -84,13 +84,17 @@ class CandidateViewSet(viewsets.ModelViewSet):
         candidate = self.get_object()
         serializer = StatusUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        is_admin_override = (
+            serializer.validated_data.get('is_admin_override', False)
+            and request.user.role in ('admin', 'subadmin')
+        )
         try:
             candidate = StatusTransitionService.update_status(
                 candidate=candidate,
                 new_status=serializer.validated_data['status'],
                 user=request.user,
                 remarks=serializer.validated_data.get('remarks', ''),
-                is_admin_override=serializer.validated_data.get('is_admin_override', False),
+                is_admin_override=is_admin_override,
             )
         except StatusTransitionError as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)

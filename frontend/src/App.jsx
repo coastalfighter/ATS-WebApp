@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import FreshCandidatesPage from './pages/FreshCandidatesPage';
 import PipelineCandidatesPage from './pages/PipelineCandidatesPage';
+import AllCandidatesPage from './pages/AllCandidatesPage';
 import CandidateDetailPage from './pages/CandidateDetailPage';
 import UploadCandidatesPage from './pages/UploadCandidatesPage';
 import BatchHistoryPage from './pages/BatchHistoryPage';
@@ -13,6 +14,7 @@ import InterviewsPage from './pages/InterviewsPage';
 import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
 import DuplicateReviewPage from './pages/DuplicateReviewPage';
+import AdminSettingsPage from './pages/AdminSettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 
@@ -30,6 +32,7 @@ function AppRoutes() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/candidates/fresh" element={<FreshCandidatesPage />} />
         <Route path="/candidates/pipeline" element={<PipelineCandidatesPage />} />
+        <Route path="/candidates/all" element={<AllCandidatesPage />} />
         <Route path="/candidates/upload" element={<UploadCandidatesPage />} />
         <Route path="/candidates/batches" element={<BatchHistoryPage />} />
         <Route path="/candidates/duplicates" element={
@@ -37,9 +40,14 @@ function AppRoutes() {
         } />
         <Route path="/candidates/:id" element={<CandidateDetailPage />} />
         <Route path="/interviews" element={<InterviewsPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/reports" element={
+          <ProtectedRoute roles={['admin', 'subadmin']}><ReportsPage /></ProtectedRoute>
+        } />
         <Route path="/users" element={
           <ProtectedRoute roles={['admin', 'subadmin']}><UserManagementPage /></ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute roles={['admin', 'subadmin']}><AdminSettingsPage /></ProtectedRoute>
         } />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />

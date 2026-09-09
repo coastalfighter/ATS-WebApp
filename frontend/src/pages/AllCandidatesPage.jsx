@@ -6,9 +6,9 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import Pagination from '../components/common/Pagination';
 import StatusUpdateModal from '../components/common/StatusUpdateModal';
-import { STATUS_LABELS, getStatusBadgeClass, formatDate } from '../utils/statusHelpers';
+import { STATUS_LABELS, BUCKET_LABELS, getStatusBadgeClass, formatDate } from '../utils/statusHelpers';
 
-export default function FreshCandidatesPage() {
+export default function AllCandidatesPage() {
   const navigate = useNavigate();
   const { isAdminOrSubadmin } = useAuth();
   const [candidates, setCandidates] = useState([]);
@@ -19,6 +19,7 @@ export default function FreshCandidatesPage() {
   const [count, setCount] = useState(0);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [bucketFilter, setBucketFilter] = useState('');
   const [recruiterFilter, setRecruiterFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -26,7 +27,6 @@ export default function FreshCandidatesPage() {
   const [ordering, setOrdering] = useState('-created_at');
   const [recruiters, setRecruiters] = useState([]);
   const [statusCandidate, setStatusCandidate] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (isAdminOrSubadmin) {
@@ -34,7 +34,7 @@ export default function FreshCandidatesPage() {
     }
   }, []);
 
-  useEffect(() => { loadCandidates(); }, [page, statusFilter, recruiterFilter, ordering]);
+  useEffect(() => { loadCandidates(); }, [page, statusFilter, bucketFilter, recruiterFilter, ordering]);
 
   const loadCandidates = async () => {
     setLoading(true);
@@ -42,11 +42,12 @@ export default function FreshCandidatesPage() {
       const params = { page, ordering };
       if (search) params.search = search;
       if (statusFilter) params.current_status = statusFilter;
+      if (bucketFilter) params.current_bucket = bucketFilter;
       if (recruiterFilter) params.assigned_recruiter = recruiterFilter;
       if (sourceFilter) params.source = sourceFilter;
       if (dateFrom) params.created_after = dateFrom;
       if (dateTo) params.created_before = dateTo;
-      const { data } = await candidatesAPI.fresh(params);
+      const { data } = await candidatesAPI.list(params);
       setCandidates(data.results || []);
       setCount(data.count || 0);
       setTotalPages(Math.ceil((data.count || 0) / 25));
@@ -63,13 +64,6 @@ export default function FreshCandidatesPage() {
     loadCandidates();
   };
 
-  const clearFilters = () => {
-    setSearch(''); setStatusFilter(''); setRecruiterFilter('');
-    setSourceFilter(''); setDateFrom(''); setDateTo('');
-    setPage(1);
-    setTimeout(loadCandidates, 0);
-  };
-
   const handleSort = (field) => {
     setOrdering(ordering === field ? `-${field}` : field);
     setPage(1);
@@ -81,87 +75,89 @@ export default function FreshCandidatesPage() {
     </th>
   );
 
-  const freshStatuses = [
+  const allStatuses = [
     'never_contacted', 'contacted', 'unanswered', 'not_interested',
     'asked_to_connect_later', 'wrong_number', 'invalid_contact',
     'duplicate', 'do_not_contact', 'follow_up_due', 'interested',
+    'screening_scheduled', 'screening_completed',
+    'interview_scheduled', 'interview_completed', 'submitted',
+    'rejected', 'selected', 'offer_released', 'joined', 'dropped',
   ];
 
   return (
     <div>
       <div className="page-header">
-        <div>
-          <h1>Fresh Candidates</h1>
-          <small className="text-muted">{count} candidates</small>
-        </div>
-        <div className="d-flex gap-2">
-          <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
-            onClick={() => setShowFilters(!showFilters)}>
-            <i className="bi bi-funnel"></i> {showFilters ? 'Hide Filters' : 'Filters'}
-          </button>
-          <button className="btn btn-primary btn-sm d-flex align-items-center gap-1"
-            onClick={() => navigate('/candidates/upload')}>
-            <i className="bi bi-cloud-arrow-up"></i> Upload CSV/XLSX
-          </button>
-        </div>
+        <h1>All Candidates</h1>
+        <span className="badge bg-secondary">{count} total</span>
       </div>
 
       <AlertMessage message={error} onClose={() => setError('')} />
 
       <div className="filter-bar">
         <form onSubmit={handleSearch} className="row g-2 align-items-end">
-          <div className="col-md-4">
+          <div className="col-md-3">
             <input type="text" className="form-control form-control-sm"
               placeholder="Search name, email, phone..."
               value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <div className="col-md-3">
+          <div className="col-md-2">
             <select className="form-select form-select-sm" value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
               <option value="">All Statuses</option>
-              {freshStatuses.map((s) => (
+              {allStatuses.map((s) => (
                 <option key={s} value={s}>{STATUS_LABELS[s]}</option>
               ))}
             </select>
           </div>
           <div className="col-md-2">
-            <button type="submit" className="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1">
-              <i className="bi bi-search"></i> Search
+            <select className="form-select form-select-sm" value={bucketFilter}
+              onChange={(e) => { setBucketFilter(e.target.value); setPage(1); }}>
+              <option value="">All Buckets</option>
+              <option value="fresh">Fresh</option>
+              <option value="pipeline">Pipeline</option>
+            </select>
+          </div>
+          {isAdminOrSubadmin && (
+            <div className="col-md-2">
+              <select className="form-select form-select-sm" value={recruiterFilter}
+                onChange={(e) => { setRecruiterFilter(e.target.value); setPage(1); }}>
+                <option value="">All Recruiters</option>
+                {recruiters.map((r) => (
+                  <option key={r.id} value={r.id}>{r.full_name || `${r.first_name} ${r.last_name}`}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="col-md-1">
+            <button type="submit" className="btn btn-outline-primary btn-sm w-100">
+              <i className="bi bi-search"></i>
             </button>
           </div>
         </form>
-        {showFilters && (
-          <div className="row g-2 mt-1">
-            {isAdminOrSubadmin && (
-              <div className="col-md-2">
-                <select className="form-select form-select-sm" value={recruiterFilter}
-                  onChange={(e) => { setRecruiterFilter(e.target.value); setPage(1); }}>
-                  <option value="">All Recruiters</option>
-                  {recruiters.map((r) => (
-                    <option key={r.id} value={r.id}>{r.full_name || `${r.first_name} ${r.last_name}`}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div className="col-md-2">
-              <input type="text" className="form-control form-control-sm" placeholder="Source..."
-                value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
-            </div>
-            <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm" title="From date"
-                value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-            </div>
-            <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm" title="To date"
-                value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-            </div>
-            <div className="col-md-2">
-              <button className="btn btn-outline-secondary btn-sm w-100" onClick={clearFilters}>
-                <i className="bi bi-x-circle"></i> Clear
-              </button>
-            </div>
+        <div className="row g-2 mt-1">
+          <div className="col-md-2">
+            <input type="text" className="form-control form-control-sm" placeholder="Source..."
+              value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} />
           </div>
-        )}
+          <div className="col-md-2">
+            <input type="date" className="form-control form-control-sm" placeholder="From date"
+              value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          </div>
+          <div className="col-md-2">
+            <input type="date" className="form-control form-control-sm" placeholder="To date"
+              value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          </div>
+          <div className="col-md-2">
+            <button className="btn btn-outline-secondary btn-sm w-100" onClick={() => {
+              setSearch(''); setStatusFilter(''); setBucketFilter('');
+              setRecruiterFilter(''); setSourceFilter('');
+              setDateFrom(''); setDateTo(''); setPage(1);
+              setTimeout(loadCandidates, 0);
+            }}>
+              <i className="bi bi-x-circle"></i> Clear
+            </button>
+          </div>
+        </div>
       </div>
 
       {loading ? <LoadingSpinner /> : (
@@ -173,10 +169,10 @@ export default function FreshCandidatesPage() {
                   <SortHeader field="first_name">Name</SortHeader>
                   <th>Email</th>
                   <th>Phone</th>
-                  <th>Source</th>
+                  <th>Bucket</th>
                   <th>Status</th>
+                  <th>Source</th>
                   <th>Recruiter</th>
-                  <SortHeader field="follow_up_date">Follow-up</SortHeader>
                   <SortHeader field="created_at">Created</SortHeader>
                   <th>Actions</th>
                 </tr>
@@ -191,10 +187,10 @@ export default function FreshCandidatesPage() {
                     </td>
                     <td><small>{c.email}</small></td>
                     <td><small>{c.phone}</small></td>
-                    <td><small>{c.source || '-'}</small></td>
+                    <td><span className="badge bg-secondary">{BUCKET_LABELS[c.current_bucket] || c.current_bucket}</span></td>
                     <td><span className={getStatusBadgeClass(c.current_status)}>{STATUS_LABELS[c.current_status] || c.current_status}</span></td>
+                    <td><small>{c.source || '-'}</small></td>
                     <td><small>{c.assigned_recruiter_name || '-'}</small></td>
-                    <td><small>{formatDate(c.follow_up_date)}</small></td>
                     <td><small>{formatDate(c.created_at)}</small></td>
                     <td>
                       <button className="btn btn-outline-primary btn-sm py-0 px-1"
