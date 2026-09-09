@@ -221,7 +221,26 @@ class ImportHandler:
             if missing:
                 return None, None, f"Missing required columns: {', '.join(missing)}"
 
-            preview_rows = rows[:20]
+            preview_rows = []
+            for idx, row in enumerate(rows[:50]):
+                row_copy = dict(row)
+                row_errors = cls.validate_row(row, idx + 2)
+                if row_errors:
+                    row_copy['_validation_status'] = 'invalid'
+                    row_copy['_validation_error'] = '; '.join(row_errors)
+                else:
+                    full_name = f"{row.get('first_name', '')} {row.get('last_name', '')}".strip()
+                    is_dup, dup_ids = DuplicateDetectionService.check_row(
+                        row.get('email', ''), row.get('phone', ''), full_name
+                    )
+                    if is_dup:
+                        row_copy['_validation_status'] = 'duplicate'
+                        row_copy['_validation_error'] = f"Duplicate of existing candidate(s)"
+                    else:
+                        row_copy['_validation_status'] = 'valid'
+                        row_copy['_validation_error'] = ''
+                preview_rows.append(row_copy)
+
             summary = {
                 'total_rows': len(rows),
                 'headers': headers,

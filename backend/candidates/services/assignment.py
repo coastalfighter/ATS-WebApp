@@ -39,7 +39,7 @@ class AssignmentService:
 
     @staticmethod
     @transaction.atomic
-    def assign_candidate(candidate, recruiter, assigned_by, is_reassignment=False):
+    def assign_candidate(candidate, recruiter, assigned_by, is_reassignment=False, remarks=''):
         old_recruiter = candidate.assigned_recruiter
         candidate.assigned_recruiter = recruiter
         candidate.save(update_fields=['assigned_recruiter', 'updated_at'])
@@ -52,13 +52,14 @@ class AssignmentService:
         )
 
         action = ACTION_RECRUITER_CHANGED if is_reassignment else ACTION_CANDIDATE_ASSIGNED
+        default_remarks = 'Reassignment' if is_reassignment else 'Initial assignment'
         CandidateActivityLog.objects.create(
             candidate=candidate,
             action_type=action,
             old_value=old_recruiter.get_full_name() if old_recruiter else '',
             new_value=recruiter.get_full_name(),
             performed_by=assigned_by,
-            remarks='Reassignment' if is_reassignment else 'Initial assignment',
+            remarks=remarks or default_remarks,
         )
         return candidate
 
@@ -77,9 +78,9 @@ class AssignmentService:
         return assigned, errors
 
     @classmethod
-    def reassign_candidate(cls, candidate, new_recruiter, assigned_by):
+    def reassign_candidate(cls, candidate, new_recruiter, assigned_by, remarks=''):
         return cls.assign_candidate(
-            candidate, new_recruiter, assigned_by, is_reassignment=True
+            candidate, new_recruiter, assigned_by, is_reassignment=True, remarks=remarks
         )
 
     @staticmethod

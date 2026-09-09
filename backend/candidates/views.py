@@ -27,6 +27,7 @@ from .constants import (
 )
 from .services.status_transition import StatusTransitionService, StatusTransitionError
 from .services.assignment import AssignmentService
+from .services.duplicate_detection import DuplicateDetectionService
 from .services.import_handler import ImportHandler
 
 logger = logging.getLogger('ats')
@@ -56,6 +57,18 @@ class CandidateViewSet(viewsets.ModelViewSet):
         return CandidateDetailSerializer
 
     def perform_create(self, serializer):
+        email = serializer.validated_data.get('email', '')
+        phone = serializer.validated_data.get('phone', '')
+        first_name = serializer.validated_data.get('first_name', '')
+        last_name = serializer.validated_data.get('last_name', '')
+        full_name = f"{first_name} {last_name}".strip()
+        is_dup, dup_ids = DuplicateDetectionService.check_row(email, phone, full_name)
+        if is_dup:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({
+                'detail': f'Duplicate candidate detected. Matches existing candidate(s): {dup_ids}'
+            })
+
         candidate = serializer.save(
             created_by=self.request.user,
             current_bucket=BUCKET_FRESH,
@@ -117,7 +130,8 @@ class CandidateViewSet(viewsets.ModelViewSet):
                 {'detail': 'Recruiter not found or inactive.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        AssignmentService.reassign_candidate(candidate, recruiter, request.user)
+        remarks = serializer.validated_data.get('remarks', '')
+        AssignmentService.reassign_candidate(candidate, recruiter, request.user, remarks=remarks)
         return Response(CandidateDetailSerializer(candidate).data)
 
     @action(detail=True, methods=['post'])
@@ -295,6 +309,12 @@ class ActivityLogListView(generics.ListAPIView):
         user_id = self.request.query_params.get('user_id')
         if user_id:
             qs = qs.filter(performed_by_id=user_id)
+        created_after = self.request.query_params.get('created_after')
+        if created_after:
+            qs = qs.filter(created_at__date__gte=created_after)
+        created_before = self.request.query_params.get('created_before')
+        if created_before:
+            qs = qs.filter(created_at__date__lte=created_before)
         return qs
 
 

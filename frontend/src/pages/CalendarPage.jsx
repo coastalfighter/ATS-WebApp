@@ -85,7 +85,7 @@ export default function CalendarPage() {
         {loading ? <LoadingSpinner /> : (
           <div className="calendar-grid">
             {dayNames.map(d => (
-              <div key={d} className="calendar-header">{d}</div>
+              <div key={d} className="calendar-header-cell">{d}</div>
             ))}
             {calendarCells.map((day, i) => {
               if (!day) return <div key={`empty-${i}`} className="calendar-cell empty"></div>;
@@ -100,10 +100,10 @@ export default function CalendarPage() {
                   className={`calendar-cell ${isToday(day) ? 'today' : ''} ${isSelected ? 'selected' : ''} ${dayInterviews.length > 0 ? 'has-events' : ''}`}
                   onClick={() => setSelectedDate(day)}
                 >
-                  <div className="calendar-day-number">{day}</div>
-                  {scheduled > 0 && <span className="calendar-badge scheduled">{scheduled} scheduled</span>}
-                  {completed > 0 && <span className="calendar-badge completed">{completed} done</span>}
-                  {cancelled > 0 && <span className="calendar-badge cancelled">{cancelled} cancelled</span>}
+                  <div className="calendar-day">{day}</div>
+                  {scheduled > 0 && <span className="calendar-badge">{scheduled} scheduled</span>}
+                  {completed > 0 && <span className="calendar-badge" style={{background:'var(--success)'}}>{completed} done</span>}
+                  {cancelled > 0 && <span className="calendar-badge" style={{background:'var(--danger)'}}>{cancelled} cancelled</span>}
                 </div>
               );
             })}

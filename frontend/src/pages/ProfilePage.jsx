@@ -4,7 +4,7 @@ import { authAPI } from '../services/api';
 import AlertMessage from '../components/common/AlertMessage';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [form, setForm] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
@@ -18,7 +18,8 @@ export default function ProfilePage() {
     e.preventDefault();
     setError(''); setSuccess('');
     try {
-      await authAPI.updateProfile(form);
+      const { data } = await authAPI.updateProfile(form);
+      updateUser(data);
       setSuccess('Profile updated.');
     } catch (err) {
       setError('Failed to update profile.');

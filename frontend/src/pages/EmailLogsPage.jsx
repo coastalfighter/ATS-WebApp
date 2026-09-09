@@ -9,7 +9,6 @@ export default function EmailLogsPage() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
@@ -37,7 +36,6 @@ export default function EmailLogsPage() {
         <h1>Email Logs</h1>
       </div>
 
-      <AlertMessage type="success" message={success} onClose={() => setSuccess('')} />
       <AlertMessage message={error} onClose={() => setError('')} />
 
       <div className="filter-bar mb-3">

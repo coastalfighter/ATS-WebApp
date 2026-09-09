@@ -30,8 +30,8 @@ class Interview(models.Model):
     )
     notes = models.TextField(blank=True)
     zoom_meeting_id = models.CharField(max_length=100, blank=True)
-    zoom_join_url = models.URLField(blank=True)
-    zoom_start_url = models.URLField(blank=True)
+    zoom_join_url = models.URLField(max_length=2048, blank=True)
+    zoom_start_url = models.URLField(max_length=2048, blank=True)
     google_event_id = models.CharField(max_length=255, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
