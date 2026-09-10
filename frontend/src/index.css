@@ -1204,6 +1204,39 @@ th.cursor-pointer:hover { background: var(--primary-bg); }
 }
 
 /* ===== UPLOAD PAGE ===== */
+.upload-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid var(--border);
+}
+.upload-tab {
+  padding: 0.65rem 1.25rem;
+  border: none;
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+  transition: color var(--transition);
+}
+.upload-tab:hover { color: var(--text-primary); }
+.upload-tab.active {
+  color: var(--primary);
+}
+.upload-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -2px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px 2px 0 0;
+}
+
 .upload-zone {
   border: 2px dashed var(--border);
   border-radius: var(--radius-lg);

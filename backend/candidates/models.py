@@ -53,6 +53,8 @@ class Candidate(models.Model):
     phone = models.CharField(max_length=20, db_index=True)
     alternate_phone = models.CharField(max_length=20, blank=True)
     source = models.CharField(max_length=100, blank=True)
+    residential_location = models.CharField(max_length=200, blank=True)
+    job_market = models.CharField(max_length=200, blank=True)
     current_bucket = models.CharField(
         max_length=20, choices=BUCKET_CHOICES, default=BUCKET_UPLOAD_QUEUE, db_index=True
     )

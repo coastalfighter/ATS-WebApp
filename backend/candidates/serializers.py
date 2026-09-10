@@ -15,7 +15,8 @@ class CandidateListSerializer(serializers.ModelSerializer):
         model = Candidate
         fields = [
             'id', 'first_name', 'last_name', 'full_name', 'email', 'phone',
-            'alternate_phone', 'source', 'current_bucket', 'current_status',
+            'alternate_phone', 'source', 'residential_location', 'job_market',
+            'current_bucket', 'current_status',
             'assigned_recruiter', 'assigned_recruiter_name',
             'follow_up_date', 'notes', 'created_at', 'updated_at',
             'call_count',
@@ -37,7 +38,8 @@ class CandidateDetailSerializer(serializers.ModelSerializer):
         model = Candidate
         fields = [
             'id', 'first_name', 'last_name', 'full_name', 'email', 'phone',
-            'alternate_phone', 'source', 'current_bucket', 'current_status',
+            'alternate_phone', 'source', 'residential_location', 'job_market',
+            'current_bucket', 'current_status',
             'assigned_recruiter', 'assigned_recruiter_detail',
             'upload_batch', 'notes', 'follow_up_date',
             'created_at', 'updated_at', 'created_by', 'created_by_name',
@@ -60,8 +62,12 @@ class CandidateCreateSerializer(serializers.ModelSerializer):
         model = Candidate
         fields = [
             'first_name', 'last_name', 'email', 'phone',
-            'alternate_phone', 'source', 'notes',
+            'alternate_phone', 'source', 'residential_location',
+            'job_market', 'notes', 'assigned_recruiter',
         ]
+        extra_kwargs = {
+            'assigned_recruiter': {'required': False, 'allow_null': True},
+        }
 
 
 class CandidateUpdateSerializer(serializers.ModelSerializer):
@@ -69,7 +75,8 @@ class CandidateUpdateSerializer(serializers.ModelSerializer):
         model = Candidate
         fields = [
             'first_name', 'last_name', 'email', 'phone',
-            'alternate_phone', 'source', 'notes', 'follow_up_date',
+            'alternate_phone', 'source', 'residential_location',
+            'job_market', 'notes', 'follow_up_date',
         ]
 
 

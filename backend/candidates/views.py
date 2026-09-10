@@ -69,13 +69,17 @@ class CandidateViewSet(viewsets.ModelViewSet):
                 'detail': f'Duplicate candidate detected. Matches existing candidate(s): {dup_ids}'
             })
 
+        explicit_recruiter = serializer.validated_data.pop('assigned_recruiter', None)
         candidate = serializer.save(
             created_by=self.request.user,
             current_bucket=BUCKET_FRESH,
         )
-        recruiter = AssignmentService.get_next_recruiter()
-        if recruiter:
-            AssignmentService.assign_candidate(candidate, recruiter, self.request.user)
+        if explicit_recruiter:
+            AssignmentService.assign_candidate(candidate, explicit_recruiter, self.request.user)
+        else:
+            recruiter = AssignmentService.get_next_recruiter()
+            if recruiter:
+                AssignmentService.assign_candidate(candidate, recruiter, self.request.user)
         CandidateActivityLog.objects.create(
             candidate=candidate,
             action_type=ACTION_CANDIDATE_CREATED,

@@ -14,7 +14,7 @@ from .assignment import AssignmentService
 logger = logging.getLogger('ats')
 
 REQUIRED_COLUMNS = ['first_name', 'last_name', 'email', 'phone']
-OPTIONAL_COLUMNS = ['alternate_phone', 'source']
+OPTIONAL_COLUMNS = ['alternate_phone', 'source', 'residential_location', 'job_market']
 
 COLUMN_ALIASES = {
     'firstname': 'first_name',
@@ -28,6 +28,12 @@ COLUMN_ALIASES = {
     'alt_phone': 'alternate_phone',
     'alternate phone': 'alternate_phone',
     'alt phone': 'alternate_phone',
+    'location': 'residential_location',
+    'residential location': 'residential_location',
+    'city': 'residential_location',
+    'job market': 'job_market',
+    'market': 'job_market',
+    'industry': 'job_market',
 }
 
 
@@ -164,6 +170,8 @@ class ImportHandler:
                     phone=row.get('phone', ''),
                     alternate_phone=row.get('alternate_phone', ''),
                     source=row.get('source', ''),
+                    residential_location=row.get('residential_location', ''),
+                    job_market=row.get('job_market', ''),
                     current_bucket=BUCKET_FRESH,
                     current_status=FRESH_NEVER_CONTACTED,
                     upload_batch=batch,
