@@ -32,11 +32,11 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
           </NavLink>
 
           <div className="sidebar-section">Candidates</div>
-          <NavLink to="/candidates/fresh" className={linkClass} onClick={onClose} title="Fresh Candidates">
-            <i className="bi bi-person-lines-fill"></i> <span>Fresh Candidates</span>
+          <NavLink to="/candidates/fresh" className={linkClass} onClick={onClose} title="Leads / Master Data">
+            <i className="bi bi-person-lines-fill"></i> <span>Leads / Master Data</span>
           </NavLink>
-          <NavLink to="/candidates/pipeline" className={linkClass} onClick={onClose} title="Pipeline">
-            <i className="bi bi-funnel-fill"></i> <span>Pipeline</span>
+          <NavLink to="/candidates/pipeline" className={linkClass} onClick={onClose} title="Booked Candidates">
+            <i className="bi bi-bookmark-check-fill"></i> <span>Booked Candidates</span>
           </NavLink>
           <NavLink to="/candidates/all" className={linkClass} onClick={onClose} title="All Candidates">
             <i className="bi bi-people-fill"></i> <span>All Candidates</span>

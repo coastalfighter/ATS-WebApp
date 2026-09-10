@@ -2349,6 +2349,33 @@ th.cursor-pointer:hover { background: var(--primary-bg); }
 }
 .fl-empty p { margin: 0; font-size: 0.9375rem; }
 
+/* Booked Candidates – Inline Status Select */
+.bk-inline-select {
+  height: 32px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--surface);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition);
+  max-width: 100%;
+}
+.bk-inline-select:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+}
+
+/* Expanded card details */
+.fl-card-expanded {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-light);
+  animation: slideUp 0.15s ease;
+}
+
 /* Responsive */
 @media (max-width: 991px) {
   .fl-summary-grid { grid-template-columns: repeat(2, 1fr); }

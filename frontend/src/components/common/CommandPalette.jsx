@@ -7,8 +7,8 @@ const NAV_ITEMS = [
     { label: 'Dashboard', path: '/', icon: 'bi-grid-1x2-fill' },
   ]},
   { group: 'Candidates', items: [
-    { label: 'Fresh Candidates', path: '/candidates/fresh', icon: 'bi-person-lines-fill' },
-    { label: 'Pipeline Candidates', path: '/candidates/pipeline', icon: 'bi-funnel-fill' },
+    { label: 'Leads / Master Data', path: '/candidates/fresh', icon: 'bi-person-lines-fill' },
+    { label: 'Booked Candidates', path: '/candidates/pipeline', icon: 'bi-bookmark-check-fill' },
     { label: 'All Candidates', path: '/candidates/all', icon: 'bi-people-fill' },
     { label: 'Upload CSV/XLSX', path: '/candidates/upload', icon: 'bi-cloud-arrow-up-fill' },
     { label: 'Batch History', path: '/candidates/batches', icon: 'bi-clock-history' },

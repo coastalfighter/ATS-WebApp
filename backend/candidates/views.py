@@ -258,12 +258,55 @@ class CandidateViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def pipeline(self, request):
-        qs = self.get_queryset().filter(current_bucket=BUCKET_PIPELINE)
+        from django.db.models import Count
+        qs = Candidate.objects.select_related(
+            'assigned_recruiter', 'created_by', 'updated_by'
+        ).filter(current_bucket=BUCKET_PIPELINE).annotate(
+            call_count=Count('call_logs')
+        )
         qs = self.filter_queryset(qs)
         page = self.paginate_queryset(qs)
         if page is not None:
             return self.get_paginated_response(CandidateListSerializer(page, many=True).data)
         return Response(CandidateListSerializer(qs, many=True).data)
+
+    @action(detail=False, methods=['get'], url_path='pipeline-summary')
+    def pipeline_summary(self, request):
+        from django.db.models import Count, Q
+        qs = Candidate.objects.filter(current_bucket=BUCKET_PIPELINE)
+        search = request.query_params.get('search', '')
+        if search:
+            qs = qs.filter(
+                Q(first_name__icontains=search) | Q(last_name__icontains=search) |
+                Q(email__icontains=search) | Q(phone__icontains=search) |
+                Q(source__icontains=search)
+            )
+        recruiter = request.query_params.get('assigned_recruiter')
+        if recruiter:
+            qs = qs.filter(assigned_recruiter_id=recruiter)
+        source = request.query_params.get('source')
+        if source:
+            qs = qs.filter(source__icontains=source)
+        created_after = request.query_params.get('created_after')
+        if created_after:
+            qs = qs.filter(created_at__date__gte=created_after)
+        created_before = request.query_params.get('created_before')
+        if created_before:
+            qs = qs.filter(created_at__date__lte=created_before)
+
+        total = qs.count()
+        status_counts = dict(qs.values_list('current_status').annotate(c=Count('id')))
+
+        return Response({
+            'total': total,
+            'screening': status_counts.get('screening_scheduled', 0) + status_counts.get('screening_completed', 0),
+            'interview_scheduled': status_counts.get('interview_scheduled', 0),
+            'interview_completed': status_counts.get('interview_completed', 0),
+            'submitted': status_counts.get('submitted', 0),
+            'selected': status_counts.get('selected', 0),
+            'joined': status_counts.get('joined', 0),
+            'rejected': status_counts.get('rejected', 0) + status_counts.get('dropped', 0),
+        })
 
     @action(detail=False, methods=['get'], permission_classes=[IsAdminOrSubadmin])
     def duplicates(self, request):
