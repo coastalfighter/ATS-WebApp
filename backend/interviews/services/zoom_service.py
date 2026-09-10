@@ -1,6 +1,7 @@
 import logging
 import requests
 from django.conf import settings
+from django.utils import timezone
 
 logger = logging.getLogger('ats')
 
@@ -8,6 +9,21 @@ logger = logging.getLogger('ats')
 class ZoomService:
     TOKEN_URL = 'https://zoom.us/oauth/token'
     API_BASE = 'https://api.zoom.us/v2'
+
+    @classmethod
+    def _get_access_token_for_account(cls, zoom_account):
+        if not all([zoom_account.account_id, zoom_account.client_id, zoom_account.client_secret]):
+            logger.warning(f'Zoom credentials incomplete for room: {zoom_account.room_name}')
+            return None
+
+        resp = requests.post(
+            cls.TOKEN_URL,
+            params={'grant_type': 'account_credentials', 'account_id': zoom_account.account_id},
+            auth=(zoom_account.client_id, zoom_account.client_secret),
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()['access_token']
 
     @classmethod
     def _get_access_token(cls):
@@ -29,8 +45,19 @@ class ZoomService:
         return resp.json()['access_token']
 
     @classmethod
-    def create_meeting(cls, topic, start_time, duration_minutes=30, agenda=''):
-        token = cls._get_access_token()
+    def get_next_available_room(cls):
+        from interviews.models import ZoomAccount
+        rooms = list(ZoomAccount.objects.filter(is_active=True).order_by('last_used_at'))
+        if not rooms:
+            return None
+        return rooms[0]
+
+    @classmethod
+    def create_meeting(cls, topic, start_time, duration_minutes=30, agenda='', zoom_account=None):
+        if zoom_account:
+            token = cls._get_access_token_for_account(zoom_account)
+        else:
+            token = cls._get_access_token()
         if not token:
             return None
 
@@ -55,15 +82,24 @@ class ZoomService:
         )
         resp.raise_for_status()
         data = resp.json()
+
+        if zoom_account:
+            zoom_account.last_used_at = timezone.now()
+            zoom_account.save(update_fields=['last_used_at'])
+
         return {
             'meeting_id': str(data['id']),
             'join_url': data['join_url'],
             'start_url': data['start_url'],
+            'zoom_account': zoom_account,
         }
 
     @classmethod
-    def update_meeting(cls, meeting_id, topic=None, start_time=None, duration_minutes=None):
-        token = cls._get_access_token()
+    def update_meeting(cls, meeting_id, topic=None, start_time=None, duration_minutes=None, zoom_account=None):
+        if zoom_account:
+            token = cls._get_access_token_for_account(zoom_account)
+        else:
+            token = cls._get_access_token()
         if not token:
             return None
 
@@ -85,8 +121,11 @@ class ZoomService:
         return True
 
     @classmethod
-    def delete_meeting(cls, meeting_id):
-        token = cls._get_access_token()
+    def delete_meeting(cls, meeting_id, zoom_account=None):
+        if zoom_account:
+            token = cls._get_access_token_for_account(zoom_account)
+        else:
+            token = cls._get_access_token()
         if not token:
             return None
 

@@ -60,6 +60,12 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
           <NavLink to="/calendar" className={linkClass} onClick={onClose} title="Calendar">
             <i className="bi bi-calendar3"></i> <span>Calendar</span>
           </NavLink>
+          <NavLink to="/heatmap" className={linkClass} onClick={onClose} title="HeatMap">
+            <i className="bi bi-geo-alt-fill"></i> <span>HeatMap</span>
+          </NavLink>
+          <NavLink to="/call-logs" className={linkClass} onClick={onClose} title="Call Logs">
+            <i className="bi bi-telephone-fill"></i> <span>Call Logs</span>
+          </NavLink>
 
           {isAdminOrSubadmin && (
             <>
@@ -78,6 +84,9 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
               </NavLink>
               <NavLink to="/settings" className={linkClass} onClick={onClose} title="Settings">
                 <i className="bi bi-gear-fill"></i> <span>Settings</span>
+              </NavLink>
+              <NavLink to="/zoom-rooms" className={linkClass} onClick={onClose} title="Zoom Rooms">
+                <i className="bi bi-grid-3x3-gap-fill"></i> <span>Zoom Rooms</span>
               </NavLink>
               <NavLink to="/audit" className={linkClass} onClick={onClose} title="Audit Log">
                 <i className="bi bi-journal-text"></i> <span>Audit Log</span>

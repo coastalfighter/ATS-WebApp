@@ -4,14 +4,17 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from accounts.permissions import IsAdminOrSubadmin
 from candidates.models import CandidateActivityLog
 from candidates.constants import (
     ACTION_ZOOM_MEETING_CREATED, ACTION_CALENDAR_EVENT_CREATED, ACTION_EMAIL_SENT,
 )
-from .models import Interview, EmailLog
+from .models import Interview, EmailLog, ZoomAccount, Location, CallLog
 from .serializers import (
     InterviewSerializer, InterviewCreateSerializer,
     InterviewUpdateSerializer, EmailLogSerializer,
+    ZoomAccountSerializer, ZoomAccountListSerializer,
+    LocationSerializer, CallLogSerializer,
 )
 from .services.zoom_service import ZoomService
 from .services.calendar_service import GoogleCalendarService
@@ -25,7 +28,7 @@ class InterviewViewSet(viewsets.ModelViewSet):
     ordering = ['-scheduled_at']
 
     def get_queryset(self):
-        qs = Interview.objects.select_related('candidate', 'created_by').all()
+        qs = Interview.objects.select_related('candidate', 'created_by', 'zoom_account').all()
         user = self.request.user
         if user.role == 'recruiter':
             qs = qs.filter(candidate__assigned_recruiter=user)
@@ -35,6 +38,15 @@ class InterviewViewSet(viewsets.ModelViewSet):
         status_param = self.request.query_params.get('status')
         if status_param:
             qs = qs.filter(status=status_param)
+        interview_type = self.request.query_params.get('interview_type')
+        if interview_type:
+            qs = qs.filter(interview_type=interview_type)
+        scheduled_after = self.request.query_params.get('scheduled_after')
+        if scheduled_after:
+            qs = qs.filter(scheduled_at__date__gte=scheduled_after)
+        scheduled_before = self.request.query_params.get('scheduled_before')
+        if scheduled_before:
+            qs = qs.filter(scheduled_at__date__lte=scheduled_before)
         return qs
 
     def get_serializer_class(self):
@@ -47,17 +59,20 @@ class InterviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         interview = serializer.save(created_by=self.request.user)
 
+        zoom_account = ZoomService.get_next_available_room()
         try:
             zoom_data = ZoomService.create_meeting(
                 topic=f"{interview.get_interview_type_display()} - {interview.candidate.full_name}",
                 start_time=interview.scheduled_at,
                 duration_minutes=interview.duration_minutes,
                 agenda=interview.notes,
+                zoom_account=zoom_account,
             )
             if zoom_data:
                 interview.zoom_meeting_id = zoom_data['meeting_id']
                 interview.zoom_join_url = zoom_data['join_url']
                 interview.zoom_start_url = zoom_data['start_url']
+                interview.zoom_account = zoom_data.get('zoom_account')
                 interview.save()
                 CandidateActivityLog.objects.create(
                     candidate=interview.candidate,
@@ -110,6 +125,7 @@ class InterviewViewSet(viewsets.ModelViewSet):
                     topic=f"{interview.get_interview_type_display()} - {interview.candidate.full_name}",
                     start_time=interview.scheduled_at,
                     duration_minutes=interview.duration_minutes,
+                    zoom_account=interview.zoom_account,
                 )
             except Exception as e:
                 logger.exception(f'Zoom meeting update failed: {e}')
@@ -138,7 +154,10 @@ class InterviewViewSet(viewsets.ModelViewSet):
 
         if interview.zoom_meeting_id:
             try:
-                ZoomService.delete_meeting(interview.zoom_meeting_id)
+                ZoomService.delete_meeting(
+                    interview.zoom_meeting_id,
+                    zoom_account=interview.zoom_account,
+                )
             except Exception as e:
                 logger.exception(f'Zoom meeting deletion failed: {e}')
 
@@ -179,6 +198,9 @@ class EmailLogViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = EmailLog.objects.all()
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
         candidate_id = self.request.query_params.get('candidate')
         if candidate_id:
             qs = qs.filter(candidate_id=candidate_id)
@@ -186,3 +208,74 @@ class EmailLogViewSet(viewsets.ReadOnlyModelViewSet):
         if interview_id:
             qs = qs.filter(interview_id=interview_id)
         return qs
+
+
+class ZoomAccountViewSet(viewsets.ModelViewSet):
+    queryset = ZoomAccount.objects.all()
+    permission_classes = [IsAdminOrSubadmin]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ZoomAccountListSerializer
+        return ZoomAccountSerializer
+
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        room = self.get_object()
+        room.is_active = not room.is_active
+        room.save(update_fields=['is_active'])
+        return Response(ZoomAccountSerializer(room).data)
+
+    @action(detail=True, methods=['post'])
+    def test_connection(self, request, pk=None):
+        room = self.get_object()
+        try:
+            token = ZoomService._get_access_token_for_account(room)
+            if token:
+                return Response({'status': 'connected', 'detail': 'Zoom account connected successfully.'})
+            return Response(
+                {'status': 'failed', 'detail': 'Could not obtain access token.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            return Response(
+                {'status': 'failed', 'detail': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class LocationViewSet(viewsets.ModelViewSet):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = Location.objects.all()
+        if self.request.query_params.get('active_only') == 'true':
+            qs = qs.filter(is_active=True)
+        return qs
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminOrSubadmin])
+    def toggle_active(self, request, pk=None):
+        location = self.get_object()
+        location.is_active = not location.is_active
+        location.save(update_fields=['is_active'])
+        return Response(LocationSerializer(location).data)
+
+
+class CallLogViewSet(viewsets.ModelViewSet):
+    serializer_class = CallLogSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = CallLog.objects.select_related('candidate', 'initiated_by').all()
+        candidate_id = self.request.query_params.get('candidate')
+        if candidate_id:
+            qs = qs.filter(candidate_id=candidate_id)
+        provider = self.request.query_params.get('provider')
+        if provider:
+            qs = qs.filter(provider=provider)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(initiated_by=self.request.user)

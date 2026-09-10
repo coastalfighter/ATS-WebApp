@@ -109,6 +109,30 @@ export const interviewsAPI = {
   emailLogs: (params) => api.get('/interviews/emails/', { params }),
 };
 
+export const zoomRoomsAPI = {
+  list: (params) => api.get('/interviews/zoom-rooms/', { params }),
+  get: (id) => api.get(`/interviews/zoom-rooms/${id}/`),
+  create: (data) => api.post('/interviews/zoom-rooms/', data),
+  update: (id, data) => api.patch(`/interviews/zoom-rooms/${id}/`, data),
+  delete: (id) => api.delete(`/interviews/zoom-rooms/${id}/`),
+  toggleActive: (id) => api.post(`/interviews/zoom-rooms/${id}/toggle_active/`),
+  testConnection: (id) => api.post(`/interviews/zoom-rooms/${id}/test_connection/`),
+};
+
+export const locationsAPI = {
+  list: (params) => api.get('/interviews/locations/', { params }),
+  get: (id) => api.get(`/interviews/locations/${id}/`),
+  create: (data) => api.post('/interviews/locations/', data),
+  update: (id, data) => api.patch(`/interviews/locations/${id}/`, data),
+  delete: (id) => api.delete(`/interviews/locations/${id}/`),
+  toggleActive: (id) => api.post(`/interviews/locations/${id}/toggle_active/`),
+};
+
+export const callLogsAPI = {
+  list: (params) => api.get('/interviews/call-logs/', { params }),
+  create: (data) => api.post('/interviews/call-logs/', data),
+};
+
 export const dashboardAPI = {
   recruiter: () => api.get('/dashboard/recruiter/'),
   admin: () => api.get('/dashboard/admin/'),

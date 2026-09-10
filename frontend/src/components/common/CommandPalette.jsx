@@ -17,6 +17,8 @@ const NAV_ITEMS = [
   { group: 'Scheduling', items: [
     { label: 'Interviews', path: '/interviews', icon: 'bi-camera-video-fill' },
     { label: 'Calendar', path: '/calendar', icon: 'bi-calendar3' },
+    { label: 'HeatMap', path: '/heatmap', icon: 'bi-geo-alt-fill' },
+    { label: 'Call Logs', path: '/call-logs', icon: 'bi-telephone-fill' },
   ]},
   { group: 'Analytics', items: [
     { label: 'Reports', path: '/reports', icon: 'bi-bar-chart-line-fill', adminOnly: true },
@@ -26,6 +28,7 @@ const NAV_ITEMS = [
     { label: 'Settings', path: '/settings', icon: 'bi-gear-fill', adminOnly: true },
     { label: 'Audit Log', path: '/audit', icon: 'bi-journal-text', adminOnly: true },
     { label: 'Email Logs', path: '/email-logs', icon: 'bi-envelope', adminOnly: true },
+    { label: 'Zoom Rooms', path: '/zoom-rooms', icon: 'bi-grid-3x3-gap-fill', adminOnly: true },
   ]},
   { group: 'Account', items: [
     { label: 'Profile', path: '/profile', icon: 'bi-person-circle' },

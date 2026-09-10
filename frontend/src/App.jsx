@@ -20,6 +20,9 @@ import AuditLogPage from './pages/AuditLogPage';
 import EmailLogsPage from './pages/EmailLogsPage';
 import ProfilePage from './pages/ProfilePage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
+import ZoomRoomsPage from './pages/ZoomRoomsPage';
+import HeatMapPage from './pages/HeatMapPage';
+import CallLogsPage from './pages/CallLogsPage';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -44,6 +47,11 @@ function AppRoutes() {
         <Route path="/candidates/:id" element={<CandidateDetailPage />} />
         <Route path="/interviews" element={<InterviewsPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/heatmap" element={<HeatMapPage />} />
+        <Route path="/call-logs" element={<CallLogsPage />} />
+        <Route path="/zoom-rooms" element={
+          <ProtectedRoute roles={['admin', 'subadmin']}><ZoomRoomsPage /></ProtectedRoute>
+        } />
         <Route path="/reports" element={
           <ProtectedRoute roles={['admin', 'subadmin']}><ReportsPage /></ProtectedRoute>
         } />

@@ -1,18 +1,48 @@
 from rest_framework import serializers
-from .models import Interview, EmailLog
+from .models import Interview, EmailLog, ZoomAccount, Location, CallLog
 from candidates.serializers import CandidateListSerializer
+
+
+class ZoomAccountSerializer(serializers.ModelSerializer):
+    active_meetings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ZoomAccount
+        fields = [
+            'id', 'room_name', 'account_id', 'client_id', 'client_secret',
+            'is_active', 'last_used_at', 'active_meetings', 'created_at',
+        ]
+        extra_kwargs = {
+            'client_secret': {'write_only': True},
+        }
+
+    def get_active_meetings(self, obj):
+        return obj.interviews.filter(status='scheduled').count()
+
+
+class ZoomAccountListSerializer(serializers.ModelSerializer):
+    active_meetings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ZoomAccount
+        fields = ['id', 'room_name', 'is_active', 'last_used_at', 'active_meetings']
+
+    def get_active_meetings(self, obj):
+        return obj.interviews.filter(status='scheduled').count()
 
 
 class InterviewSerializer(serializers.ModelSerializer):
     candidate_detail = CandidateListSerializer(source='candidate', read_only=True)
     created_by_name = serializers.SerializerMethodField()
+    zoom_room_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Interview
         fields = [
             'id', 'candidate', 'candidate_detail', 'interviewer_name',
             'interviewer_email', 'interview_type', 'scheduled_at',
-            'duration_minutes', 'status', 'notes',
+            'duration_minutes', 'location', 'status', 'notes',
+            'zoom_account', 'zoom_room_name',
             'zoom_meeting_id', 'zoom_join_url', 'zoom_start_url',
             'google_event_id', 'created_by', 'created_by_name',
             'created_at', 'updated_at',
@@ -25,13 +55,17 @@ class InterviewSerializer(serializers.ModelSerializer):
     def get_created_by_name(self, obj):
         return obj.created_by.get_full_name() if obj.created_by else None
 
+    def get_zoom_room_name(self, obj):
+        return obj.zoom_account.room_name if obj.zoom_account else None
+
 
 class InterviewCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Interview
         fields = [
             'candidate', 'interviewer_name', 'interviewer_email',
-            'interview_type', 'scheduled_at', 'duration_minutes', 'notes',
+            'interview_type', 'scheduled_at', 'duration_minutes',
+            'location', 'notes',
         ]
 
 
@@ -40,7 +74,7 @@ class InterviewUpdateSerializer(serializers.ModelSerializer):
         model = Interview
         fields = [
             'interviewer_name', 'interviewer_email', 'interview_type',
-            'scheduled_at', 'duration_minutes', 'notes',
+            'scheduled_at', 'duration_minutes', 'location', 'notes',
         ]
 
 
@@ -51,3 +85,37 @@ class EmailLogSerializer(serializers.ModelSerializer):
             'id', 'interview', 'candidate', 'email_type', 'recipient',
             'subject', 'body', 'status', 'error_message', 'sent_at', 'sent_by',
         ]
+
+
+class LocationSerializer(serializers.ModelSerializer):
+    interview_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Location
+        fields = [
+            'id', 'name', 'address', 'city', 'state', 'country',
+            'latitude', 'longitude', 'is_active', 'interview_count', 'created_at',
+        ]
+
+    def get_interview_count(self, obj):
+        return Interview.objects.filter(location=obj.name).count()
+
+
+class CallLogSerializer(serializers.ModelSerializer):
+    candidate_name = serializers.SerializerMethodField()
+    initiated_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CallLog
+        fields = [
+            'id', 'candidate', 'candidate_name', 'phone_number', 'direction',
+            'duration_seconds', 'status', 'provider', 'provider_call_id',
+            'notes', 'initiated_by', 'initiated_by_name', 'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
+
+    def get_candidate_name(self, obj):
+        return obj.candidate.full_name if obj.candidate else None
+
+    def get_initiated_by_name(self, obj):
+        return obj.initiated_by.get_full_name() if obj.initiated_by else None
