@@ -117,7 +117,7 @@ REST_FRAMEWORK = {
         'anon': '20/minute',
         'user': '200/minute',
     },
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'ats_project.pagination.FlexiblePagination',
     'PAGE_SIZE': 25,
     'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S%z',
 }

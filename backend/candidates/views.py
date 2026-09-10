@@ -193,12 +193,68 @@ class CandidateViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def fresh(self, request):
-        qs = self.get_queryset().filter(current_bucket=BUCKET_FRESH)
+        from django.db.models import Count
+        qs = Candidate.objects.select_related(
+            'assigned_recruiter', 'created_by', 'updated_by'
+        ).filter(current_bucket=BUCKET_FRESH).annotate(
+            call_count=Count('call_logs')
+        )
         qs = self.filter_queryset(qs)
         page = self.paginate_queryset(qs)
         if page is not None:
             return self.get_paginated_response(CandidateListSerializer(page, many=True).data)
         return Response(CandidateListSerializer(qs, many=True).data)
+
+    @action(detail=False, methods=['get'], url_path='fresh-summary')
+    def fresh_summary(self, request):
+        from django.db.models import Count, Q
+        qs = Candidate.objects.filter(current_bucket=BUCKET_FRESH)
+        # apply same filters except status
+        search = request.query_params.get('search', '')
+        if search:
+            qs = qs.filter(
+                Q(first_name__icontains=search) | Q(last_name__icontains=search) |
+                Q(email__icontains=search) | Q(phone__icontains=search) |
+                Q(source__icontains=search)
+            )
+        recruiter = request.query_params.get('assigned_recruiter')
+        if recruiter:
+            qs = qs.filter(assigned_recruiter_id=recruiter)
+        source = request.query_params.get('source')
+        if source:
+            qs = qs.filter(source__icontains=source)
+        created_after = request.query_params.get('created_after')
+        if created_after:
+            qs = qs.filter(created_at__date__gte=created_after)
+        created_before = request.query_params.get('created_before')
+        if created_before:
+            qs = qs.filter(created_at__date__lte=created_before)
+
+        total = qs.count()
+        status_counts = dict(qs.values_list('current_status').annotate(c=Count('id')))
+
+        from .constants import (
+            FRESH_NEVER_CONTACTED, FRESH_CONTACTED, FRESH_UNANSWERED,
+            FRESH_NOT_INTERESTED, FRESH_ASKED_CONNECT_LATER,
+            FRESH_WRONG_NUMBER, FRESH_INVALID_CONTACT, FRESH_DUPLICATE,
+            FRESH_DO_NOT_CONTACT, FRESH_FOLLOW_UP_DUE, FRESH_INTERESTED,
+        )
+
+        return Response({
+            'total': total,
+            'never_contacted': status_counts.get(FRESH_NEVER_CONTACTED, 0),
+            'contacted': status_counts.get(FRESH_CONTACTED, 0),
+            'unanswered': status_counts.get(FRESH_UNANSWERED, 0),
+            'not_interested': status_counts.get(FRESH_NOT_INTERESTED, 0),
+            'callback': status_counts.get(FRESH_ASKED_CONNECT_LATER, 0) + status_counts.get(FRESH_FOLLOW_UP_DUE, 0),
+            'closed': (
+                status_counts.get(FRESH_WRONG_NUMBER, 0) +
+                status_counts.get(FRESH_INVALID_CONTACT, 0) +
+                status_counts.get(FRESH_DUPLICATE, 0) +
+                status_counts.get(FRESH_DO_NOT_CONTACT, 0)
+            ),
+            'interested': status_counts.get(FRESH_INTERESTED, 0),
+        })
 
     @action(detail=False, methods=['get'])
     def pipeline(self, request):

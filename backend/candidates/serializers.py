@@ -9,6 +9,7 @@ from accounts.serializers import UserSerializer
 class CandidateListSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='full_name', read_only=True)
     assigned_recruiter_name = serializers.SerializerMethodField()
+    call_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Candidate
@@ -16,7 +17,8 @@ class CandidateListSerializer(serializers.ModelSerializer):
             'id', 'first_name', 'last_name', 'full_name', 'email', 'phone',
             'alternate_phone', 'source', 'current_bucket', 'current_status',
             'assigned_recruiter', 'assigned_recruiter_name',
-            'follow_up_date', 'created_at', 'updated_at',
+            'follow_up_date', 'notes', 'created_at', 'updated_at',
+            'call_count',
         ]
 
     def get_assigned_recruiter_name(self, obj):

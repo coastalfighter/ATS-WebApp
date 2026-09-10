@@ -75,6 +75,7 @@ export const candidatesAPI = {
   update: (id, data) => api.patch(`/candidates/${id}/`, data),
   delete: (id) => api.delete(`/candidates/${id}/`),
   fresh: (params) => api.get('/candidates/fresh/', { params }),
+  freshSummary: (params) => api.get('/candidates/fresh-summary/', { params }),
   pipeline: (params) => api.get('/candidates/pipeline/', { params }),
   duplicates: (params) => api.get('/candidates/duplicates/', { params }),
   updateStatus: (id, data) => api.post(`/candidates/${id}/update_status/`, data),
