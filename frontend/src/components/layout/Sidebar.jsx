@@ -57,6 +57,9 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
           <NavLink to="/interviews" className={linkClass} onClick={onClose} title="Interviews">
             <i className="bi bi-camera-video-fill"></i> <span>Interviews</span>
           </NavLink>
+          <NavLink to="/interview-slots" className={linkClass} onClick={onClose} title="Manage Slots">
+            <i className="bi bi-calendar-plus-fill"></i> <span>Manage Slots</span>
+          </NavLink>
           <NavLink to="/calendar" className={linkClass} onClick={onClose} title="Calendar">
             <i className="bi bi-calendar3"></i> <span>Calendar</span>
           </NavLink>

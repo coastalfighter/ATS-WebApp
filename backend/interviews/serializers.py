@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Interview, EmailLog, ZoomAccount, Location, CallLog
+from .models import Interview, EmailLog, ZoomAccount, Location, CallLog, InterviewSlot
 from candidates.serializers import CandidateListSerializer
 
 
@@ -99,6 +99,48 @@ class LocationSerializer(serializers.ModelSerializer):
 
     def get_interview_count(self, obj):
         return Interview.objects.filter(location=obj.name).count()
+
+
+class InterviewSlotSerializer(serializers.ModelSerializer):
+    location_name = serializers.SerializerMethodField()
+    hiring_manager_name = serializers.SerializerMethodField()
+    zoom_room_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InterviewSlot
+        fields = [
+            'id', 'location', 'location_name', 'hiring_manager',
+            'hiring_manager_name', 'date', 'start_time', 'end_time',
+            'max_capacity', 'booked_count', 'meeting_link',
+            'zoom_account', 'zoom_room_name', 'status', 'created_by',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'booked_count', 'status', 'created_by', 'created_at']
+
+    def get_location_name(self, obj):
+        return str(obj.location) if obj.location else None
+
+    def get_hiring_manager_name(self, obj):
+        return obj.hiring_manager.get_full_name() if obj.hiring_manager else None
+
+    def get_zoom_room_name(self, obj):
+        if obj.zoom_account:
+            return obj.zoom_account.room_name
+        return None
+
+
+class InterviewSlotCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InterviewSlot
+        fields = [
+            'location', 'hiring_manager', 'date', 'start_time',
+            'end_time', 'max_capacity', 'meeting_link', 'zoom_account',
+        ]
+
+    def validate(self, data):
+        if data['start_time'] >= data['end_time']:
+            raise serializers.ValidationError({'end_time': 'End time must be after start time.'})
+        return data
 
 
 class CallLogSerializer(serializers.ModelSerializer):

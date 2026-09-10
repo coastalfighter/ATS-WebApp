@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   ]},
   { group: 'Scheduling', items: [
     { label: 'Interviews', path: '/interviews', icon: 'bi-camera-video-fill' },
+    { label: 'Manage Slots', path: '/interview-slots', icon: 'bi-calendar-plus-fill' },
     { label: 'Calendar', path: '/calendar', icon: 'bi-calendar3' },
     { label: 'HeatMap', path: '/heatmap', icon: 'bi-geo-alt-fill' },
     { label: 'Call Logs', path: '/call-logs', icon: 'bi-telephone-fill' },

@@ -23,6 +23,7 @@ import ChangePasswordPage from './pages/ChangePasswordPage';
 import ZoomRoomsPage from './pages/ZoomRoomsPage';
 import HeatMapPage from './pages/HeatMapPage';
 import CallLogsPage from './pages/CallLogsPage';
+import ManageSlotsPage from './pages/ManageSlotsPage';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -46,6 +47,7 @@ function AppRoutes() {
         } />
         <Route path="/candidates/:id" element={<CandidateDetailPage />} />
         <Route path="/interviews" element={<InterviewsPage />} />
+        <Route path="/interview-slots" element={<ManageSlotsPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/heatmap" element={<HeatMapPage />} />
         <Route path="/call-logs" element={<CallLogsPage />} />

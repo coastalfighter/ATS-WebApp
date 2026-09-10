@@ -9,12 +9,13 @@ from candidates.models import CandidateActivityLog
 from candidates.constants import (
     ACTION_ZOOM_MEETING_CREATED, ACTION_CALENDAR_EVENT_CREATED, ACTION_EMAIL_SENT,
 )
-from .models import Interview, EmailLog, ZoomAccount, Location, CallLog
+from .models import Interview, EmailLog, ZoomAccount, Location, CallLog, InterviewSlot
 from .serializers import (
     InterviewSerializer, InterviewCreateSerializer,
     InterviewUpdateSerializer, EmailLogSerializer,
     ZoomAccountSerializer, ZoomAccountListSerializer,
     LocationSerializer, CallLogSerializer,
+    InterviewSlotSerializer, InterviewSlotCreateSerializer,
 )
 from .services.zoom_service import ZoomService
 from .services.calendar_service import GoogleCalendarService
@@ -279,3 +280,99 @@ class CallLogViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(initiated_by=self.request.user)
+
+
+class InterviewSlotViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = InterviewSlot.objects.select_related(
+            'location', 'hiring_manager', 'zoom_account'
+        ).all()
+        location_id = self.request.query_params.get('location')
+        if location_id:
+            qs = qs.filter(location_id=location_id)
+        hm_id = self.request.query_params.get('hiring_manager')
+        if hm_id:
+            qs = qs.filter(hiring_manager_id=hm_id)
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+        active_only = self.request.query_params.get('active_only')
+        if active_only == 'true':
+            qs = qs.exclude(status='cancelled')
+        return qs
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return InterviewSlotCreateSerializer
+        if self.action in ('update', 'partial_update'):
+            return InterviewSlotCreateSerializer
+        return InterviewSlotSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        slot = self.get_object()
+        slot.status = InterviewSlot.SlotStatus.CANCELLED
+        slot.save(update_fields=['status'])
+        return Response(InterviewSlotSerializer(slot).data)
+
+    @action(detail=True, methods=['post'])
+    def update_capacity(self, request, pk=None):
+        slot = self.get_object()
+        max_cap = request.data.get('max_capacity')
+        if max_cap is None:
+            return Response(
+                {'detail': 'max_capacity is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        max_cap = int(max_cap)
+        if max_cap < slot.booked_count:
+            return Response(
+                {'detail': f'Cannot set capacity below current bookings ({slot.booked_count}).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        slot.max_capacity = max_cap
+        slot.save(update_fields=['max_capacity'])
+        slot.refresh_status()
+        return Response(InterviewSlotSerializer(slot).data)
+
+    @action(detail=True, methods=['post'])
+    def book(self, request, pk=None):
+        slot = self.get_object()
+        if slot.status == InterviewSlot.SlotStatus.CANCELLED:
+            return Response(
+                {'detail': 'Cannot book a cancelled slot.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if slot.booked_count >= slot.max_capacity:
+            return Response(
+                {'detail': 'Slot is fully booked.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        slot.booked_count += 1
+        slot.save(update_fields=['booked_count'])
+        slot.refresh_status()
+        return Response(InterviewSlotSerializer(slot).data)
+
+    @action(detail=True, methods=['post'])
+    def unbook(self, request, pk=None):
+        slot = self.get_object()
+        if slot.booked_count <= 0:
+            return Response(
+                {'detail': 'No bookings to remove.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        slot.booked_count -= 1
+        slot.save(update_fields=['booked_count'])
+        slot.refresh_status()
+        return Response(InterviewSlotSerializer(slot).data)

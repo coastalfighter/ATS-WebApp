@@ -114,6 +114,58 @@ class Location(models.Model):
         return f"{self.name} ({self.city})"
 
 
+class InterviewSlot(models.Model):
+    class SlotStatus(models.TextChoices):
+        OPEN = 'open', 'Open'
+        PARTIALLY_BOOKED = 'partially_booked', 'Partially Booked'
+        FULLY_BOOKED = 'fully_booked', 'Fully Booked'
+        CANCELLED = 'cancelled', 'Cancelled'
+
+    location = models.ForeignKey(
+        Location, on_delete=models.CASCADE, related_name='interview_slots'
+    )
+    hiring_manager = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='managed_slots'
+    )
+    date = models.DateField(db_index=True)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    max_capacity = models.PositiveIntegerField(default=1)
+    booked_count = models.PositiveIntegerField(default=0)
+    meeting_link = models.URLField(max_length=2048, blank=True)
+    zoom_account = models.ForeignKey(
+        ZoomAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name='slots'
+    )
+    status = models.CharField(
+        max_length=20, choices=SlotStatus.choices, default=SlotStatus.OPEN
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, related_name='created_slots'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date', 'start_time']
+        indexes = [
+            models.Index(fields=['date', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.location.name} | {self.date} {self.start_time}-{self.end_time}"
+
+    def refresh_status(self):
+        if self.status == self.SlotStatus.CANCELLED:
+            return
+        if self.booked_count >= self.max_capacity:
+            self.status = self.SlotStatus.FULLY_BOOKED
+        elif self.booked_count > 0:
+            self.status = self.SlotStatus.PARTIALLY_BOOKED
+        else:
+            self.status = self.SlotStatus.OPEN
+        self.save(update_fields=['status'])
+
+
 class CallLog(models.Model):
     class Provider(models.TextChoices):
         RINGCENTRAL = 'ringcentral', 'RingCentral'

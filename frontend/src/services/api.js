@@ -130,6 +130,18 @@ export const locationsAPI = {
   toggleActive: (id) => api.post(`/interviews/locations/${id}/toggle_active/`),
 };
 
+export const interviewSlotsAPI = {
+  list: (params) => api.get('/interviews/slots/', { params }),
+  get: (id) => api.get(`/interviews/slots/${id}/`),
+  create: (data) => api.post('/interviews/slots/', data),
+  update: (id, data) => api.patch(`/interviews/slots/${id}/`, data),
+  delete: (id) => api.delete(`/interviews/slots/${id}/`),
+  cancel: (id) => api.post(`/interviews/slots/${id}/cancel/`),
+  updateCapacity: (id, data) => api.post(`/interviews/slots/${id}/update_capacity/`, data),
+  book: (id) => api.post(`/interviews/slots/${id}/book/`),
+  unbook: (id) => api.post(`/interviews/slots/${id}/unbook/`),
+};
+
 export const callLogsAPI = {
   list: (params) => api.get('/interviews/call-logs/', { params }),
   create: (data) => api.post('/interviews/call-logs/', data),
