@@ -134,8 +134,8 @@ export const callLogsAPI = {
 };
 
 export const dashboardAPI = {
-  recruiter: () => api.get('/dashboard/recruiter/'),
-  admin: () => api.get('/dashboard/admin/'),
+  recruiter: (params) => api.get('/dashboard/recruiter/', { params }),
+  admin: (params) => api.get('/dashboard/admin/', { params }),
 };
 
 export const reportsAPI = {
