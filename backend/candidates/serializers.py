@@ -1,3 +1,4 @@
+import phonenumbers
 from rest_framework import serializers
 from .models import (
     Candidate, CandidateNote, CandidateActivityLog,
@@ -5,6 +6,18 @@ from .models import (
     FastGemUpload,
 )
 from accounts.serializers import UserSerializer
+
+
+def validate_phone_number(value, field_name='phone'):
+    if not value:
+        return value
+    try:
+        parsed = phonenumbers.parse(value, 'IN')
+        if not phonenumbers.is_valid_number(parsed):
+            raise serializers.ValidationError({field_name: 'Invalid phone number.'})
+        return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+    except phonenumbers.NumberParseException:
+        raise serializers.ValidationError({field_name: 'Invalid phone number format.'})
 
 
 class CandidateListSerializer(serializers.ModelSerializer):
@@ -85,6 +98,12 @@ class CandidateCreateSerializer(serializers.ModelSerializer):
             'assigned_recruiter': {'required': False, 'allow_null': True},
         }
 
+    def validate_phone(self, value):
+        return validate_phone_number(value, 'phone')
+
+    def validate_alternate_phone(self, value):
+        return validate_phone_number(value, 'alternate_phone')
+
 
 class CandidateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -95,6 +114,12 @@ class CandidateUpdateSerializer(serializers.ModelSerializer):
             'job_market', 'notes', 'follow_up_date',
             'date_of_birth', 'experience_years', 'current_company', 'current_designation',
         ]
+
+    def validate_phone(self, value):
+        return validate_phone_number(value, 'phone')
+
+    def validate_alternate_phone(self, value):
+        return validate_phone_number(value, 'alternate_phone')
 
 
 class StatusUpdateSerializer(serializers.Serializer):
