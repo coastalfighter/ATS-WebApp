@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { interviewSlotsAPI, locationsAPI, usersAPI, zoomRoomsAPI } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { interviewSlotsAPI, locationsAPI, usersAPI, zoomRoomsAPI, bookingsAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import Pagination from '../components/common/Pagination';
@@ -67,6 +67,11 @@ export default function ManageSlotsPage() {
   const [capSlot, setCapSlot] = useState(null);
   const [capValue, setCapValue] = useState(1);
   const [capSubmitting, setCapSubmitting] = useState(false);
+
+  // Slot bookings expansion
+  const [expandedSlotId, setExpandedSlotId] = useState(null);
+  const [slotBookings, setSlotBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
 
   useEffect(() => {
     locationsAPI.list({ active_only: 'true' }).then(({ data }) => {
@@ -194,6 +199,24 @@ export default function ManageSlotsPage() {
     }
   };
 
+  const toggleSlotBookings = async (slotId) => {
+    if (expandedSlotId === slotId) {
+      setExpandedSlotId(null);
+      setSlotBookings([]);
+      return;
+    }
+    setExpandedSlotId(slotId);
+    setBookingsLoading(true);
+    try {
+      const { data } = await bookingsAPI.list({ interview_slot: slotId });
+      setSlotBookings(data.results || data);
+    } catch {
+      setSlotBookings([]);
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
   return (
     <div className="fresh-leads">
       {/* Page Header */}
@@ -278,7 +301,8 @@ export default function ManageSlotsPage() {
                 {slots.length === 0 ? (
                   <tr><td colSpan="9" className="text-center text-muted py-4">No interview slots found.</td></tr>
                 ) : slots.map((slot) => (
-                  <tr key={slot.id}>
+                  <React.Fragment key={slot.id}>
+                  <tr>
                     <td className="fw-medium">{slot.hiring_manager_name || '-'}</td>
                     <td>{slot.location_name || '-'}</td>
                     <td>{slot.date}</td>
@@ -308,6 +332,13 @@ export default function ManageSlotsPage() {
                     </td>
                     <td>
                       <div className="d-flex gap-1">
+                        {slot.booked_count > 0 && (
+                          <button className="btn btn-outline-primary btn-sm py-0 px-1"
+                            title="View Bookings"
+                            onClick={() => toggleSlotBookings(slot.id)}>
+                            <i className={`bi bi-chevron-${expandedSlotId === slot.id ? 'up' : 'down'}`}></i>
+                          </button>
+                        )}
                         <button className="btn btn-outline-secondary btn-sm py-0 px-1"
                           title="Update Capacity"
                           disabled={slot.status === 'cancelled'}
@@ -323,6 +354,45 @@ export default function ManageSlotsPage() {
                       </div>
                     </td>
                   </tr>
+                  {expandedSlotId === slot.id && (
+                    <tr>
+                      <td colSpan="9" style={{ backgroundColor: '#f8f9fa', padding: '0.75rem 1rem' }}>
+                        {bookingsLoading ? (
+                          <small className="text-muted">Loading bookings...</small>
+                        ) : slotBookings.length === 0 ? (
+                          <small className="text-muted">No bookings found for this slot.</small>
+                        ) : (
+                          <div>
+                            <small className="fw-semibold text-muted d-block mb-2">
+                              <i className="bi bi-people-fill me-1"></i>
+                              {slotBookings.length} Booking{slotBookings.length !== 1 ? 's' : ''}
+                            </small>
+                            <div className="d-flex flex-wrap gap-2">
+                              {slotBookings.map(b => (
+                                <div key={b.id} className="d-flex align-items-center gap-2 bg-white border rounded px-2 py-1"
+                                  style={{ fontSize: '0.8125rem' }}>
+                                  <span className="fw-medium">{b.candidate_name}</span>
+                                  <span className={`badge bg-${
+                                    b.status === 'confirmed' ? 'success' :
+                                    b.status === 'pending' ? 'warning' :
+                                    b.status === 'cancelled' ? 'secondary' : 'danger'
+                                  }`} style={{ fontSize: '0.65rem' }}>
+                                    {b.status}
+                                  </span>
+                                  {b.round && (
+                                    <span className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                      {b.round === 'round_1' ? 'R1' : 'R2'}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'accounts',
     'candidates',
     'interviews',
+    'bookings',
     'reports',
     'dashboard',
     'core',

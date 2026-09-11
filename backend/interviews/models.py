@@ -31,6 +31,10 @@ class Interview(models.Model):
         HR = 'hr', 'HR'
         FINAL = 'final', 'Final'
 
+    class RoundChoice(models.TextChoices):
+        ROUND_1 = 'round_1', 'Round 1'
+        ROUND_2 = 'round_2', 'Round 2'
+
     candidate = models.ForeignKey(
         'candidates.Candidate', on_delete=models.CASCADE, related_name='interviews'
     )
@@ -52,6 +56,13 @@ class Interview(models.Model):
     zoom_meeting_id = models.CharField(max_length=100, blank=True)
     zoom_join_url = models.URLField(max_length=2048, blank=True)
     zoom_start_url = models.URLField(max_length=2048, blank=True)
+    round = models.CharField(
+        max_length=10, choices=RoundChoice.choices, default=RoundChoice.ROUND_1
+    )
+    interview_slot = models.ForeignKey(
+        'InterviewSlot', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='interviews'
+    )
     google_event_id = models.CharField(max_length=255, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -121,6 +132,10 @@ class InterviewSlot(models.Model):
         FULLY_BOOKED = 'fully_booked', 'Fully Booked'
         CANCELLED = 'cancelled', 'Cancelled'
 
+    class RoundType(models.TextChoices):
+        ROUND_1 = 'round_1', 'Round 1'
+        ROUND_2 = 'round_2', 'Round 2'
+
     location = models.ForeignKey(
         Location, on_delete=models.CASCADE, related_name='interview_slots'
     )
@@ -135,6 +150,9 @@ class InterviewSlot(models.Model):
     meeting_link = models.URLField(max_length=2048, blank=True)
     zoom_account = models.ForeignKey(
         ZoomAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name='slots'
+    )
+    round_type = models.CharField(
+        max_length=10, choices=RoundType.choices, default=RoundType.ROUND_1
     )
     status = models.CharField(
         max_length=20, choices=SlotStatus.choices, default=SlotStatus.OPEN

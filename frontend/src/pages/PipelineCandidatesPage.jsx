@@ -4,6 +4,7 @@ import { candidatesAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import StatusUpdateModal from '../components/common/StatusUpdateModal';
+import BookCandidateModal from '../components/bookings/BookCandidateModal';
 import { STATUS_LABELS, getStatusBadgeClass, formatDate } from '../utils/statusHelpers';
 
 const AVATAR_COLORS = [
@@ -47,6 +48,7 @@ export default function PipelineCandidatesPage() {
   const [dateTo, setDateTo] = useState('');
   const [ordering, setOrdering] = useState('-created_at');
   const [statusCandidate, setStatusCandidate] = useState(null);
+  const [bookCandidate, setBookCandidate] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [summary, setSummary] = useState({
     total: 0, screening: 0, interview_scheduled: 0, interview_completed: 0,
@@ -313,6 +315,9 @@ export default function PipelineCandidatesPage() {
                   <button className="fl-action-btn" onClick={() => setStatusCandidate(c)} title="Edit Status">
                     <i className="bi bi-pencil"></i> Edit
                   </button>
+                  <button className="fl-action-btn" onClick={() => setBookCandidate(c)} title="Book Interview">
+                    <i className="bi bi-bookmark-plus"></i> Book
+                  </button>
                   <button className="fl-action-btn" onClick={() => navigate(`/candidates/${c.id}`)} title="Timeline">
                     <i className="bi bi-clock-history"></i> Timeline
                   </button>
@@ -371,6 +376,13 @@ export default function PipelineCandidatesPage() {
       <StatusUpdateModal candidate={statusCandidate}
         onClose={() => setStatusCandidate(null)}
         onUpdated={() => { loadCandidates(); loadSummary(); }} />
+
+      <BookCandidateModal
+        show={!!bookCandidate}
+        onClose={() => setBookCandidate(null)}
+        candidate={bookCandidate}
+        onBooked={() => { loadCandidates(); loadSummary(); }}
+      />
     </div>
   );
 }

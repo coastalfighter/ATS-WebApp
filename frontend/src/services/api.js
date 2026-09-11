@@ -132,6 +132,15 @@ export const locationsAPI = {
   toggleActive: (id) => api.post(`/interviews/locations/${id}/toggle_active/`),
 };
 
+export const bookingsAPI = {
+  list: (params) => api.get('/bookings/', { params }),
+  get: (id) => api.get(`/bookings/${id}/`),
+  create: (data) => api.post('/bookings/', data),
+  confirm: (id) => api.post(`/bookings/${id}/confirm/`),
+  cancel: (id, data) => api.post(`/bookings/${id}/cancel/`, data),
+  markNoShow: (id) => api.post(`/bookings/${id}/mark_no_show/`),
+};
+
 export const interviewSlotsAPI = {
   list: (params) => api.get('/interviews/slots/', { params }),
   get: (id) => api.get(`/interviews/slots/${id}/`),

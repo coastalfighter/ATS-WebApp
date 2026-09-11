@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { candidatesAPI, interviewsAPI, usersAPI } from '../services/api';
+import { candidatesAPI, interviewsAPI, usersAPI, bookingsAPI } from '../services/api';
+import BookCandidateModal from '../components/bookings/BookCandidateModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import { STATUS_LABELS, BUCKET_LABELS, getStatusBadgeClass, formatDate, formatDateTime } from '../utils/statusHelpers';
@@ -124,6 +125,10 @@ export default function CandidateDetailPage() {
   });
   const [showInterviewForm, setShowInterviewForm] = useState(false);
 
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
+
   useEffect(() => { loadCandidate(); }, [id]);
 
   useEffect(() => {
@@ -131,6 +136,7 @@ export default function CandidateDetailPage() {
       loadNotes();
       loadActivity();
       loadInterviews();
+      loadBookings();
     }
   }, [candidate?.id]);
 
@@ -179,6 +185,35 @@ export default function CandidateDetailPage() {
       const { data } = await interviewsAPI.list({ candidate: id });
       setInterviews(data.results || data);
     } catch {}
+  };
+
+  const loadBookings = async () => {
+    setBookingsLoading(true);
+    try {
+      const { data } = await bookingsAPI.list({ candidate: id });
+      setBookings(data.results || data);
+    } catch {}
+    finally { setBookingsLoading(false); }
+  };
+
+  const handleConfirmBooking = async (bookingId) => {
+    try {
+      await bookingsAPI.confirm(bookingId);
+      loadBookings();
+      setSuccess('Booking confirmed.');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to confirm booking.');
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      await bookingsAPI.cancel(bookingId, {});
+      loadBookings();
+      setSuccess('Booking cancelled.');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to cancel booking.');
+    }
   };
 
   const handleLifecycleAction = async (newStatus) => {
@@ -524,6 +559,71 @@ export default function CandidateDetailPage() {
             </table>
           </div>
 
+          {/* Bookings Section */}
+          <div className="table-container mb-3">
+            <div className="p-3 border-bottom d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center gap-2">
+                <i className="bi bi-calendar-event-fill" style={{color:'var(--primary)'}}></i>
+                <h6 className="mb-0">Bookings</h6>
+              </div>
+              <button className="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                onClick={() => setShowBookModal(true)}>
+                <i className="bi bi-plus-lg"></i> Book Interview
+              </button>
+            </div>
+            {bookingsLoading ? (
+              <div className="p-3 text-center text-muted small">Loading bookings...</div>
+            ) : (
+              <table className="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Slot Date</th><th>Time</th><th>Location</th><th>Round</th>
+                    <th>Status</th><th>Booked By</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(Array.isArray(bookings) ? bookings : []).length === 0 ? (
+                    <tr><td colSpan="7" className="text-center text-muted py-3">No bookings yet.</td></tr>
+                  ) : (Array.isArray(bookings) ? bookings : []).map((bk) => (
+                    <tr key={bk.id}>
+                      <td><small style={{fontFamily:'monospace'}}>{formatDate(bk.slot_date || bk.slot?.date)}</small></td>
+                      <td><small style={{fontFamily:'monospace'}}>{bk.slot_start_time?.slice(0, 5)}{bk.slot_end_time ? ` - ${bk.slot_end_time.slice(0, 5)}` : ''}</small></td>
+                      <td><small>{bk.location_name || '-'}</small></td>
+                      <td><small className="text-capitalize">{bk.round || '-'}</small></td>
+                      <td>
+                        <span className={`badge bg-${
+                          bk.status === 'confirmed' ? 'success' :
+                          bk.status === 'pending' ? 'warning' :
+                          bk.status === 'cancelled' ? 'secondary' :
+                          bk.status === 'no_show' ? 'danger' : 'secondary'
+                        }`}>
+                          {bk.status}
+                        </span>
+                      </td>
+                      <td><small>{bk.booked_by_name || bk.booked_by?.full_name || '-'}</small></td>
+                      <td>
+                        <div className="d-flex gap-1">
+                          {bk.status === 'pending' && (
+                            <button className="btn btn-outline-success btn-sm" style={{fontSize:'0.7rem',padding:'2px 6px'}}
+                              onClick={() => handleConfirmBooking(bk.id)} title="Confirm">
+                              <i className="bi bi-check-lg"></i>
+                            </button>
+                          )}
+                          {(bk.status === 'pending' || bk.status === 'confirmed') && (
+                            <button className="btn btn-outline-danger btn-sm" style={{fontSize:'0.7rem',padding:'2px 6px'}}
+                              onClick={() => handleCancelBooking(bk.id)} title="Cancel">
+                              <i className="bi bi-x-lg"></i>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
           {/* Activity Timeline */}
           <div className="table-container">
             <div className="p-3 border-bottom d-flex align-items-center gap-2">
@@ -644,6 +744,13 @@ export default function CandidateDetailPage() {
           </div>
         </div>
       </div>
+
+      <BookCandidateModal
+        show={showBookModal}
+        onClose={() => setShowBookModal(false)}
+        candidate={candidate}
+        onBooked={loadBookings}
+      />
     </div>
   );
 }

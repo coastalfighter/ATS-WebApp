@@ -40,9 +40,9 @@ class InterviewSerializer(serializers.ModelSerializer):
         model = Interview
         fields = [
             'id', 'candidate', 'candidate_detail', 'interviewer_name',
-            'interviewer_email', 'interview_type', 'scheduled_at',
+            'interviewer_email', 'interview_type', 'round', 'scheduled_at',
             'duration_minutes', 'location', 'status', 'notes',
-            'zoom_account', 'zoom_room_name',
+            'interview_slot', 'zoom_account', 'zoom_room_name',
             'zoom_meeting_id', 'zoom_join_url', 'zoom_start_url',
             'google_event_id', 'created_by', 'created_by_name',
             'created_at', 'updated_at',
@@ -64,9 +64,13 @@ class InterviewCreateSerializer(serializers.ModelSerializer):
         model = Interview
         fields = [
             'candidate', 'interviewer_name', 'interviewer_email',
-            'interview_type', 'scheduled_at', 'duration_minutes',
-            'location', 'notes',
+            'interview_type', 'round', 'scheduled_at', 'duration_minutes',
+            'location', 'interview_slot', 'notes',
         ]
+        extra_kwargs = {
+            'round': {'required': False},
+            'interview_slot': {'required': False},
+        }
 
 
 class InterviewUpdateSerializer(serializers.ModelSerializer):
@@ -105,17 +109,22 @@ class InterviewSlotSerializer(serializers.ModelSerializer):
     location_name = serializers.SerializerMethodField()
     hiring_manager_name = serializers.SerializerMethodField()
     zoom_room_name = serializers.SerializerMethodField()
+    available_capacity = serializers.SerializerMethodField()
 
     class Meta:
         model = InterviewSlot
         fields = [
             'id', 'location', 'location_name', 'hiring_manager',
             'hiring_manager_name', 'date', 'start_time', 'end_time',
-            'max_capacity', 'booked_count', 'meeting_link',
+            'max_capacity', 'booked_count', 'available_capacity',
+            'round_type', 'meeting_link',
             'zoom_account', 'zoom_room_name', 'status', 'created_by',
             'created_at',
         ]
         read_only_fields = ['id', 'booked_count', 'status', 'created_by', 'created_at']
+
+    def get_available_capacity(self, obj):
+        return max(0, obj.max_capacity - obj.booked_count)
 
     def get_location_name(self, obj):
         return str(obj.location) if obj.location else None
@@ -134,8 +143,11 @@ class InterviewSlotCreateSerializer(serializers.ModelSerializer):
         model = InterviewSlot
         fields = [
             'location', 'hiring_manager', 'date', 'start_time',
-            'end_time', 'max_capacity', 'meeting_link', 'zoom_account',
+            'end_time', 'max_capacity', 'round_type', 'meeting_link', 'zoom_account',
         ]
+        extra_kwargs = {
+            'round_type': {'required': False},
+        }
 
     def validate(self, data):
         if data['start_time'] >= data['end_time']:
