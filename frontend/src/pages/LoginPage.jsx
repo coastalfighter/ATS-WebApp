@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AlertMessage from '../components/common/AlertMessage';
 
@@ -80,6 +80,11 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+        <div className="text-center mt-3">
+          <Link to="/forgot-password" className="text-decoration-none">
+            Forgot password?
+          </Link>
+        </div>
       </div>
     </div>
   );

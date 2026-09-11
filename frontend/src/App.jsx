@@ -1,8 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import MainLayout from './components/layout/MainLayout';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import FreshCandidatesPage from './pages/FreshCandidatesPage';
 import PipelineCandidatesPage from './pages/PipelineCandidatesPage';
@@ -31,9 +34,13 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
+      <Route path="/forgot-password" element={user ? <Navigate to="/" /> : <ForgotPasswordPage />} />
+      <Route path="/reset-password/:uid/:token" element={user ? <Navigate to="/" /> : <ResetPasswordPage />} />
       <Route element={
         <ProtectedRoute>
-          <MainLayout />
+          <ErrorBoundary>
+            <MainLayout />
+          </ErrorBoundary>
         </ProtectedRoute>
       }>
         <Route path="/" element={<DashboardPage />} />

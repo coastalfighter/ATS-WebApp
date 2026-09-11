@@ -58,6 +58,8 @@ export function AuthProvider({ children }) {
   const isAdmin = user?.role === 'admin';
   const isSubadmin = user?.role === 'subadmin';
   const isRecruiter = user?.role === 'recruiter';
+  const isHiringManager = user?.role === 'hiring_manager';
+  const isTrainer = user?.role === 'trainer';
   const isAdminOrSubadmin = isAdmin || isSubadmin;
 
   if (loading) {
@@ -73,7 +75,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, login, logout, updateUser,
-      isAdmin, isSubadmin, isRecruiter, isAdminOrSubadmin,
+      isAdmin, isSubadmin, isRecruiter, isHiringManager, isTrainer, isAdminOrSubadmin,
     }}>
       {children}
     </AuthContext.Provider>

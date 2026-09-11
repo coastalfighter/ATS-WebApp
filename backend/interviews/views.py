@@ -5,10 +5,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdminOrSubadmin
-from candidates.models import CandidateActivityLog
-from candidates.constants import (
-    ACTION_ZOOM_MEETING_CREATED, ACTION_CALENDAR_EVENT_CREATED, ACTION_EMAIL_SENT,
-)
 from .models import Interview, EmailLog, ZoomAccount, Location, CallLog, InterviewSlot
 from .serializers import (
     InterviewSerializer, InterviewCreateSerializer,
@@ -18,8 +14,13 @@ from .serializers import (
     InterviewSlotSerializer, InterviewSlotCreateSerializer,
 )
 from .services.zoom_service import ZoomService
-from .services.calendar_service import GoogleCalendarService
-from .services.email_service import EmailService
+from .tasks import (
+    create_zoom_meeting_task, create_calendar_event_task,
+    send_interview_confirmation_email, send_interview_cancellation_email,
+    send_interview_reschedule_email, send_interview_reminder_email,
+    update_zoom_meeting_task, update_calendar_event_task,
+    delete_zoom_meeting_task, delete_calendar_event_task,
+)
 
 logger = logging.getLogger('ats')
 
@@ -59,93 +60,15 @@ class InterviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         interview = serializer.save(created_by=self.request.user)
-
-        zoom_account = ZoomService.get_next_available_room()
-        try:
-            zoom_data = ZoomService.create_meeting(
-                topic=f"{interview.get_interview_type_display()} - {interview.candidate.full_name}",
-                start_time=interview.scheduled_at,
-                duration_minutes=interview.duration_minutes,
-                agenda=interview.notes,
-                zoom_account=zoom_account,
-            )
-            if zoom_data:
-                interview.zoom_meeting_id = zoom_data['meeting_id']
-                interview.zoom_join_url = zoom_data['join_url']
-                interview.zoom_start_url = zoom_data['start_url']
-                interview.zoom_account = zoom_data.get('zoom_account')
-                interview.save()
-                CandidateActivityLog.objects.create(
-                    candidate=interview.candidate,
-                    action_type=ACTION_ZOOM_MEETING_CREATED,
-                    new_value=zoom_data['join_url'],
-                    performed_by=self.request.user,
-                )
-        except Exception as e:
-            logger.exception(f'Zoom meeting creation failed: {e}')
-
-        try:
-            attendees = [interview.candidate.email, interview.interviewer_email]
-            event_id = GoogleCalendarService.create_event(
-                summary=f"{interview.get_interview_type_display()} - {interview.candidate.full_name}",
-                description=interview.notes,
-                start_time=interview.scheduled_at,
-                duration_minutes=interview.duration_minutes,
-                attendees=attendees,
-            )
-            if event_id:
-                interview.google_event_id = event_id
-                interview.save()
-                CandidateActivityLog.objects.create(
-                    candidate=interview.candidate,
-                    action_type=ACTION_CALENDAR_EVENT_CREATED,
-                    new_value=event_id,
-                    performed_by=self.request.user,
-                )
-        except Exception as e:
-            logger.exception(f'Google Calendar event creation failed: {e}')
-
-        try:
-            EmailService.send_interview_confirmation(interview, sent_by=self.request.user)
-            CandidateActivityLog.objects.create(
-                candidate=interview.candidate,
-                action_type=ACTION_EMAIL_SENT,
-                new_value='Interview confirmation emails sent',
-                performed_by=self.request.user,
-            )
-        except Exception as e:
-            logger.exception(f'Email sending failed: {e}')
+        create_zoom_meeting_task.delay(interview.id)
+        create_calendar_event_task.delay(interview.id)
+        send_interview_confirmation_email.delay(interview.id)
 
     def perform_update(self, serializer):
         interview = serializer.save()
-
-        if interview.zoom_meeting_id:
-            try:
-                ZoomService.update_meeting(
-                    meeting_id=interview.zoom_meeting_id,
-                    topic=f"{interview.get_interview_type_display()} - {interview.candidate.full_name}",
-                    start_time=interview.scheduled_at,
-                    duration_minutes=interview.duration_minutes,
-                    zoom_account=interview.zoom_account,
-                )
-            except Exception as e:
-                logger.exception(f'Zoom meeting update failed: {e}')
-
-        if interview.google_event_id:
-            try:
-                GoogleCalendarService.update_event(
-                    event_id=interview.google_event_id,
-                    summary=f"{interview.get_interview_type_display()} - {interview.candidate.full_name}",
-                    start_time=interview.scheduled_at,
-                    duration_minutes=interview.duration_minutes,
-                )
-            except Exception as e:
-                logger.exception(f'Calendar event update failed: {e}')
-
-        try:
-            EmailService.send_interview_reschedule(interview, sent_by=self.request.user)
-        except Exception as e:
-            logger.exception(f'Reschedule email failed: {e}')
+        update_zoom_meeting_task.delay(interview.id)
+        update_calendar_event_task.delay(interview.id)
+        send_interview_reschedule_email.delay(interview.id)
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
@@ -154,25 +77,14 @@ class InterviewViewSet(viewsets.ModelViewSet):
         interview.save(update_fields=['status', 'updated_at'])
 
         if interview.zoom_meeting_id:
-            try:
-                ZoomService.delete_meeting(
-                    interview.zoom_meeting_id,
-                    zoom_account=interview.zoom_account,
-                )
-            except Exception as e:
-                logger.exception(f'Zoom meeting deletion failed: {e}')
-
+            delete_zoom_meeting_task.delay(
+                interview.zoom_meeting_id,
+                zoom_account_id=interview.zoom_account_id,
+            )
         if interview.google_event_id:
-            try:
-                GoogleCalendarService.delete_event(interview.google_event_id)
-            except Exception as e:
-                logger.exception(f'Calendar event deletion failed: {e}')
+            delete_calendar_event_task.delay(interview.google_event_id)
 
-        try:
-            EmailService.send_interview_cancellation(interview, sent_by=request.user)
-        except Exception as e:
-            logger.exception(f'Cancellation email failed: {e}')
-
+        send_interview_cancellation_email.delay(interview.id)
         return Response(InterviewSerializer(interview).data)
 
     @action(detail=True, methods=['post'])
@@ -183,14 +95,8 @@ class InterviewViewSet(viewsets.ModelViewSet):
                 {'detail': 'Can only send reminders for scheduled interviews.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        try:
-            EmailService.send_interview_reminder(interview, sent_by=request.user)
-            return Response({'detail': 'Reminder sent successfully.'})
-        except Exception as e:
-            return Response(
-                {'detail': f'Failed to send reminder: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        send_interview_reminder_email.delay(interview.id)
+        return Response({'detail': 'Reminder queued for sending.'})
 
 
 class EmailLogViewSet(viewsets.ReadOnlyModelViewSet):

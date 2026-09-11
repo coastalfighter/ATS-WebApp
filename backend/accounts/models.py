@@ -6,6 +6,8 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = 'admin', 'Admin'
         SUBADMIN = 'subadmin', 'Subadmin'
+        HIRING_MANAGER = 'hiring_manager', 'Hiring Manager'
+        TRAINER = 'trainer', 'Trainer'
         RECRUITER = 'recruiter', 'Recruiter'
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.RECRUITER)
@@ -31,6 +33,14 @@ class User(AbstractUser):
     @property
     def is_recruiter_user(self):
         return self.role == self.Role.RECRUITER
+
+    @property
+    def is_hiring_manager(self):
+        return self.role == self.Role.HIRING_MANAGER
+
+    @property
+    def is_trainer_user(self):
+        return self.role == self.Role.TRAINER
 
     @property
     def is_admin_or_subadmin(self):

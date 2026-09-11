@@ -55,6 +55,8 @@ export const authAPI = {
   updateProfile: (data) => api.patch('/auth/profile/', data),
   changePassword: (data) => api.post('/auth/change-password/', data),
   refreshToken: (data) => api.post('/auth/token/refresh/', data),
+  forgotPassword: (data) => api.post('/auth/forgot-password/', data),
+  resetPasswordFromToken: (data) => api.post('/auth/reset-password/', data),
 };
 
 export const usersAPI = {

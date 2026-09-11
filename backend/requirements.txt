@@ -11,3 +11,7 @@ google-api-python-client==2.154.0
 google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.1
 python-dotenv==1.0.1
+celery[redis]==5.4.0
+redis==5.2.1
+django-celery-beat==2.7.0
+cryptography==44.0.0
