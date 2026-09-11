@@ -2652,3 +2652,60 @@ th.cursor-pointer:hover { background: var(--primary-bg); }
     right: -0.5rem;
   }
 }
+
+/* ===== CLICK TO CALL ===== */
+.click-to-call-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.click-to-call-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: #16a34a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.65rem;
+  transition: all var(--transition);
+  padding: 0;
+}
+
+.click-to-call-btn:hover {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+}
+
+.click-to-call-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.click-to-call-status {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 100px;
+  animation: fadeIn 0.2s ease;
+}
+
+.click-to-call-status.success {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+}
+
+.click-to-call-status.error {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

@@ -12,18 +12,42 @@ class ZoomService:
 
     @classmethod
     def _get_access_token_for_account(cls, zoom_account):
-        if not all([zoom_account.account_id, zoom_account.client_id, zoom_account.client_secret]):
+        creds = cls._resolve_credentials(zoom_account)
+        if not creds:
             logger.warning(f'Zoom credentials incomplete for room: {zoom_account.room_name}')
             return None
 
         resp = requests.post(
             cls.TOKEN_URL,
-            params={'grant_type': 'account_credentials', 'account_id': zoom_account.account_id},
-            auth=(zoom_account.client_id, zoom_account.client_secret),
+            params={'grant_type': 'account_credentials', 'account_id': creds['account_id']},
+            auth=(creds['client_id'], creds['client_secret']),
             timeout=10,
         )
         resp.raise_for_status()
         return resp.json()['access_token']
+
+    @classmethod
+    def _resolve_credentials(cls, zoom_account):
+        if zoom_account.account_id and zoom_account.client_id and zoom_account.client_secret:
+            return {
+                'account_id': zoom_account.account_id,
+                'client_id': zoom_account.client_id,
+                'client_secret': zoom_account.client_secret,
+            }
+
+        try:
+            from integrations.models import IntegrationCredential
+            cred = IntegrationCredential.objects.filter(
+                provider='zoom',
+                account_label=zoom_account.room_name,
+                is_active=True,
+            ).first()
+            if cred:
+                return cred.get_credentials()
+        except Exception:
+            pass
+
+        return None
 
     @classmethod
     def _get_access_token(cls):

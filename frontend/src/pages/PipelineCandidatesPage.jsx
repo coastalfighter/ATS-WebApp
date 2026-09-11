@@ -6,6 +6,7 @@ import AlertMessage from '../components/common/AlertMessage';
 import StatusUpdateModal from '../components/common/StatusUpdateModal';
 import BookCandidateModal from '../components/bookings/BookCandidateModal';
 import { STATUS_LABELS, getStatusBadgeClass, formatDate } from '../utils/statusHelpers';
+import ClickToCallButton from '../components/candidates/ClickToCallButton';
 
 const AVATAR_COLORS = [
   '#4f46e5', '#7c3aed', '#db2777', '#dc2626', '#ea580c',
@@ -294,6 +295,7 @@ export default function PipelineCandidatesPage() {
                     <span className="fl-info-value">
                       <i className="bi bi-telephone-fill fl-phone-icon"></i>
                       <a href={`tel:${c.phone}`} className="fl-phone-link">{c.phone || '-'}</a>
+                      <ClickToCallButton candidateId={c.id} phone={c.phone} />
                     </span>
                   </div>
                   <div className="fl-info-box">

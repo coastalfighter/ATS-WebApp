@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'dashboard',
     'core',
     'notifications',
+    'integrations',
 ]
 
 MIDDLEWARE = [
@@ -152,6 +153,8 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 GOOGLE_CALENDAR_CREDENTIALS_FILE = os.environ.get('GOOGLE_CALENDAR_CREDENTIALS_FILE', '')
 GOOGLE_CALENDAR_TOKEN_FILE = os.environ.get('GOOGLE_CALENDAR_TOKEN_FILE', '')
 GOOGLE_CALENDAR_ID = os.environ.get('GOOGLE_CALENDAR_ID', 'primary')
+GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE', '')
+GOOGLE_CALENDAR_OWNER = os.environ.get('GOOGLE_CALENDAR_OWNER', '')
 
 ZOOM_ACCOUNT_ID = os.environ.get('ZOOM_ACCOUNT_ID', '')
 ZOOM_CLIENT_ID = os.environ.get('ZOOM_CLIENT_ID', '')

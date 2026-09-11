@@ -83,6 +83,17 @@ TEMPLATES = {
 }
 
 
+def _get_template(key):
+    try:
+        from integrations.models import EmailTemplate
+        tpl = EmailTemplate.objects.filter(template_key=key, is_active=True).first()
+        if tpl:
+            return {'subject': tpl.subject_template, 'body': tpl.body_template}
+    except Exception:
+        pass
+    return TEMPLATES.get(key)
+
+
 class EmailService:
 
     @classmethod
@@ -132,7 +143,7 @@ class EmailService:
     @classmethod
     def send_interview_confirmation(cls, interview, sent_by=None):
         ctx = cls._build_context(interview)
-        tpl = TEMPLATES['interview_confirmation']
+        tpl = _get_template('interview_confirmation')
 
         cls.send_email(
             recipient=interview.candidate.email,
@@ -144,7 +155,7 @@ class EmailService:
             sent_by=sent_by,
         )
 
-        tpl_int = TEMPLATES['interviewer_notification']
+        tpl_int = _get_template('interviewer_notification')
         cls.send_email(
             recipient=interview.interviewer_email,
             subject=tpl_int['subject'].format(**ctx),
@@ -158,7 +169,7 @@ class EmailService:
     @classmethod
     def send_interview_cancellation(cls, interview, sent_by=None):
         ctx = cls._build_context(interview)
-        tpl = TEMPLATES['interview_cancellation']
+        tpl = _get_template('interview_cancellation')
 
         cls.send_email(
             recipient=interview.candidate.email,
@@ -170,7 +181,7 @@ class EmailService:
             sent_by=sent_by,
         )
 
-        tpl_int = TEMPLATES['interviewer_cancellation']
+        tpl_int = _get_template('interviewer_cancellation')
         cls.send_email(
             recipient=interview.interviewer_email,
             subject=tpl_int['subject'].format(**ctx),
@@ -184,7 +195,7 @@ class EmailService:
     @classmethod
     def send_interview_reschedule(cls, interview, sent_by=None):
         ctx = cls._build_context(interview)
-        tpl = TEMPLATES['interview_reschedule']
+        tpl = _get_template('interview_reschedule')
 
         cls.send_email(
             recipient=interview.candidate.email,
@@ -196,7 +207,7 @@ class EmailService:
             sent_by=sent_by,
         )
 
-        tpl_int = TEMPLATES['interviewer_notification']
+        tpl_int = _get_template('interviewer_notification')
         cls.send_email(
             recipient=interview.interviewer_email,
             subject=tpl_int['subject'].format(**ctx),
@@ -210,7 +221,7 @@ class EmailService:
     @classmethod
     def send_interview_reminder(cls, interview, sent_by=None):
         ctx = cls._build_context(interview)
-        tpl = TEMPLATES['interview_reminder']
+        tpl = _get_template('interview_reminder')
 
         cls.send_email(
             recipient=interview.candidate.email,

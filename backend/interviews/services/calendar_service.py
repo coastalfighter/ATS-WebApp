@@ -8,7 +8,12 @@ logger = logging.getLogger('ats')
 class GoogleCalendarService:
 
     @classmethod
-    def _get_service(cls):
+    def _get_service(cls, calendar_id=None):
+        service_account_file = getattr(settings, 'GOOGLE_SERVICE_ACCOUNT_FILE', '')
+
+        if service_account_file:
+            return cls._get_service_account(service_account_file)
+
         credentials_file = settings.GOOGLE_CALENDAR_CREDENTIALS_FILE
         token_file = settings.GOOGLE_CALENDAR_TOKEN_FILE
 
@@ -44,7 +49,27 @@ class GoogleCalendarService:
             return None
 
     @classmethod
-    def create_event(cls, summary, description, start_time, duration_minutes=30, attendees=None):
+    def _get_service_account(cls, service_account_file):
+        try:
+            from google.oauth2 import service_account
+            from googleapiclient.discovery import build
+
+            SCOPES = ['https://www.googleapis.com/auth/calendar']
+            credentials = service_account.Credentials.from_service_account_file(
+                service_account_file, scopes=SCOPES
+            )
+
+            owner_email = getattr(settings, 'GOOGLE_CALENDAR_OWNER', '')
+            if owner_email:
+                credentials = credentials.with_subject(owner_email)
+
+            return build('calendar', 'v3', credentials=credentials)
+        except Exception as e:
+            logger.exception(f'Failed to initialize Google Calendar service account: {e}')
+            return None
+
+    @classmethod
+    def create_event(cls, summary, description, start_time, duration_minutes=30, attendees=None, calendar_id=None):
         service = cls._get_service()
         if not service:
             return None
@@ -65,18 +90,18 @@ class GoogleCalendarService:
         if attendees:
             event['attendees'] = [{'email': e} for e in attendees]
 
-        calendar_id = settings.GOOGLE_CALENDAR_ID
-        result = service.events().insert(calendarId=calendar_id, body=event).execute()
+        cal_id = calendar_id or settings.GOOGLE_CALENDAR_ID
+        result = service.events().insert(calendarId=cal_id, body=event).execute()
         return result.get('id')
 
     @classmethod
-    def update_event(cls, event_id, summary=None, description=None, start_time=None, duration_minutes=None):
+    def update_event(cls, event_id, summary=None, description=None, start_time=None, duration_minutes=None, calendar_id=None):
         service = cls._get_service()
         if not service:
             return None
 
-        calendar_id = settings.GOOGLE_CALENDAR_ID
-        event = service.events().get(calendarId=calendar_id, eventId=event_id).execute()
+        cal_id = calendar_id or settings.GOOGLE_CALENDAR_ID
+        event = service.events().get(calendarId=cal_id, eventId=event_id).execute()
 
         if summary:
             event['summary'] = summary
@@ -87,15 +112,15 @@ class GoogleCalendarService:
             end_time = start_time + timedelta(minutes=duration_minutes or 30)
             event['end'] = {'dateTime': end_time.isoformat(), 'timeZone': 'UTC'}
 
-        service.events().update(calendarId=calendar_id, eventId=event_id, body=event).execute()
+        service.events().update(calendarId=cal_id, eventId=event_id, body=event).execute()
         return True
 
     @classmethod
-    def delete_event(cls, event_id):
+    def delete_event(cls, event_id, calendar_id=None):
         service = cls._get_service()
         if not service:
             return None
 
-        calendar_id = settings.GOOGLE_CALENDAR_ID
-        service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
+        cal_id = calendar_id or settings.GOOGLE_CALENDAR_ID
+        service.events().delete(calendarId=cal_id, eventId=event_id).execute()
         return True

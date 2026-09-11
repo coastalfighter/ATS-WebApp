@@ -199,6 +199,23 @@ export const reportsAPI = {
   exportCSV: (params) => api.get('/reports/export-csv/', { params, responseType: 'blob' }),
 };
 
+export const integrationsAPI = {
+  credentials: (params) => api.get('/integrations/credentials/', { params }),
+  createCredential: (data) => api.post('/integrations/credentials/', data),
+  updateCredential: (id, data) => api.patch(`/integrations/credentials/${id}/`, data),
+  verifyCredential: (id) => api.post(`/integrations/credentials/${id}/verify/`),
+  initiateCall: (data) => api.post('/integrations/ringcentral/call/', data),
+  callStatus: (params) => api.get('/integrations/ringcentral/status/', { params }),
+  syncCallLogs: () => api.post('/integrations/ringcentral/sync/'),
+};
+
+export const emailTemplatesAPI = {
+  list: (params) => api.get('/integrations/email-templates/', { params }),
+  get: (key) => api.get(`/integrations/email-templates/${key}/`),
+  update: (key, data) => api.patch(`/integrations/email-templates/${key}/`, data),
+  preview: (key) => api.post(`/integrations/email-templates/${key}/preview/`),
+};
+
 export const settingsAPI = {
   list: () => api.get('/candidates/settings/'),
   get: (key) => api.get(`/candidates/settings/${key}/`),

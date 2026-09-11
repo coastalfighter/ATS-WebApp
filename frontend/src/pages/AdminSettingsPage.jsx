@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { settingsAPI } from '../services/api';
+import { settingsAPI, emailTemplatesAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 
@@ -246,6 +246,12 @@ export default function AdminSettingsPage() {
             <i className="bi bi-plug me-1"></i> Integrations
           </button>
         </li>
+        <li className="nav-item">
+          <button className={`nav-link ${activeTab === 'templates' ? 'active' : ''}`}
+            onClick={() => setActiveTab('templates')}>
+            <i className="bi bi-envelope-paper me-1"></i> Email Templates
+          </button>
+        </li>
       </ul>
 
       {activeTab === 'general' && (
@@ -337,6 +343,125 @@ export default function AdminSettingsPage() {
           ))}
         </div>
       )}
+
+      {activeTab === 'templates' && (
+        <EmailTemplatesTab onSuccess={(msg) => { setSuccess(msg); setError(''); }}
+          onError={(msg) => { setError(msg); setSuccess(''); }} />
+      )}
+    </div>
+  );
+}
+
+function EmailTemplatesTab({ onSuccess, onError }) {
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingKey, setEditingKey] = useState(null);
+  const [editForm, setEditForm] = useState({ subject_template: '', body_template: '' });
+  const [preview, setPreview] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    emailTemplatesAPI.list()
+      .then(({ data }) => setTemplates(data.results || data))
+      .catch(() => onError('Failed to load email templates.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleEdit = (tpl) => {
+    setEditingKey(tpl.template_key);
+    setEditForm({ subject_template: tpl.subject_template, body_template: tpl.body_template });
+    setPreview(null);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await emailTemplatesAPI.update(editingKey, editForm);
+      setTemplates(prev => prev.map(t =>
+        t.template_key === editingKey ? { ...t, ...editForm } : t
+      ));
+      setEditingKey(null);
+      onSuccess('Template updated.');
+    } catch {
+      onError('Failed to update template.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePreview = async (key) => {
+    try {
+      const { data } = await emailTemplatesAPI.preview(key);
+      setPreview(data);
+    } catch {
+      onError('Failed to preview template.');
+    }
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <div>
+      <p className="text-muted mb-3" style={{fontSize:'0.85rem'}}>
+        Customize email templates sent for interview events. Use <code>{'{variable_name}'}</code> for dynamic content.
+      </p>
+      <div className="mb-2" style={{fontSize:'0.78rem', color:'var(--text-muted)'}}>
+        Available variables: <code>candidate_name</code>, <code>interviewer_name</code>,
+        <code> interview_type</code>, <code>scheduled_at</code>, <code>duration</code>, <code>zoom_info</code>
+      </div>
+
+      {templates.map(tpl => (
+        <div key={tpl.template_key} className="table-container mb-3">
+          <div className="p-3 d-flex align-items-center justify-content-between"
+            style={{borderBottom: editingKey === tpl.template_key ? '1px solid var(--border)' : 'none'}}>
+            <div>
+              <div className="fw-medium">{tpl.label}</div>
+              <small className="text-muted"><code>{tpl.template_key}</code></small>
+            </div>
+            <div className="d-flex gap-2">
+              {editingKey !== tpl.template_key && (
+                <>
+                  <button className="btn btn-sm btn-outline-secondary" onClick={() => handlePreview(tpl.template_key)}>
+                    <i className="bi bi-eye me-1"></i>Preview
+                  </button>
+                  <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(tpl)}>
+                    <i className="bi bi-pencil me-1"></i>Edit
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {editingKey === tpl.template_key && (
+            <div className="p-3">
+              <div className="mb-3">
+                <label className="form-label">Subject</label>
+                <input className="form-control form-control-sm" value={editForm.subject_template}
+                  onChange={(e) => setEditForm({ ...editForm, subject_template: e.target.value })} />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Body</label>
+                <textarea className="form-control form-control-sm" rows={8} value={editForm.body_template}
+                  onChange={(e) => setEditForm({ ...editForm, body_template: e.target.value })} />
+              </div>
+              <div className="d-flex gap-2">
+                <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving}>
+                  <i className="bi bi-check-lg me-1"></i>{saving ? 'Saving...' : 'Save'}
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setEditingKey(null)}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {preview && editingKey !== tpl.template_key && (
+            <div className="p-3 border-top" style={{background:'#f8fafc'}}>
+              <div className="mb-2"><strong>Subject:</strong> {preview.subject}</div>
+              <pre style={{fontSize:'0.8rem', whiteSpace:'pre-wrap', margin:0}}>{preview.body}</pre>
+              <button className="btn btn-sm btn-link p-0 mt-2" onClick={() => setPreview(null)}>Close preview</button>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
