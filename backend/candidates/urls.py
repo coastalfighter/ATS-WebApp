@@ -6,6 +6,7 @@ router = DefaultRouter()
 router.register(r'batches', views.UploadBatchViewSet, basename='upload-batch')
 router.register(r'settings', views.AppSettingViewSet, basename='app-setting')
 router.register(r'fastgem', views.FastGemUploadViewSet, basename='fastgem')
+router.register(r'job-markets', views.JobMarketViewSet, basename='job-market')
 router.register(r'', views.CandidateViewSet, basename='candidate')
 
 urlpatterns = [

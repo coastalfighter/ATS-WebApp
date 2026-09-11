@@ -266,7 +266,7 @@ export default function CandidateDetailPage() {
   const openTrainerModal = async () => {
     setShowTrainerModal(true);
     try {
-      const { data } = await usersAPI.getRecruiters({ active_only: true });
+      const { data } = await usersAPI.getTrainers({ active_only: true });
       setTrainerList(data);
     } catch {}
   };

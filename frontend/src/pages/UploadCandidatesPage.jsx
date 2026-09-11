@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { candidatesAPI, usersAPI } from '../services/api';
+import { candidatesAPI, usersAPI, jobMarketsAPI } from '../services/api';
 import AlertMessage from '../components/common/AlertMessage';
 
 const INITIAL_FORM = {
@@ -28,10 +28,14 @@ export default function UploadCandidatesPage() {
   const [formSuccess, setFormSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [recruiters, setRecruiters] = useState([]);
+  const [jobMarkets, setJobMarkets] = useState([]);
 
   useEffect(() => {
     usersAPI.getRecruiters({ active_only: true })
       .then(({ data }) => setRecruiters(data))
+      .catch(() => {});
+    jobMarketsAPI.list({ is_active: true })
+      .then(({ data }) => setJobMarkets(Array.isArray(data) ? data : data.results || []))
       .catch(() => {});
   }, []);
 
@@ -449,9 +453,13 @@ export default function UploadCandidatesPage() {
                   </div>
                   <div className="col-md-6">
                     <label className="form-label form-label-sm">Job Market</label>
-                    <input type="text" className="form-control form-control-sm" name="job_market"
-                      placeholder="e.g. IT, Healthcare, Finance..."
-                      value={form.job_market} onChange={handleFormChange} />
+                    <select className="form-select form-select-sm" name="job_market"
+                      value={form.job_market} onChange={handleFormChange}>
+                      <option value="">Select job market...</option>
+                      {jobMarkets.map((jm) => (
+                        <option key={jm.id} value={jm.name}>{jm.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="col-md-6">
                     <label className="form-label form-label-sm">Date of Birth</label>

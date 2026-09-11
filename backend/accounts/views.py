@@ -141,6 +141,22 @@ class UserViewSet(viewsets.ModelViewSet):
             recruiters = recruiters.filter(is_active=True)
         return Response(UserSerializer(recruiters, many=True).data)
 
+    @action(detail=False, methods=['get'])
+    def trainers(self, request):
+        trainers = User.objects.filter(role='trainer')
+        active_only = request.query_params.get('active_only')
+        if active_only and active_only.lower() in ('true', '1'):
+            trainers = trainers.filter(is_active=True)
+        return Response(UserSerializer(trainers, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def hiring_managers(self, request):
+        managers = User.objects.filter(role='hiring_manager')
+        active_only = request.query_params.get('active_only')
+        if active_only and active_only.lower() in ('true', '1'):
+            managers = managers.filter(is_active=True)
+        return Response(UserSerializer(managers, many=True).data)
+
 
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]

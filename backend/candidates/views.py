@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from accounts.permissions import IsAdminOrSubadmin, IsAdminOrSubadminOrRecruiter
 from .models import (
     Candidate, CandidateNote, CandidateActivityLog,
-    UploadBatch, AppSetting, FastGemUpload,
+    UploadBatch, AppSetting, FastGemUpload, JobMarket,
 )
 from .serializers import (
     CandidateListSerializer, CandidateDetailSerializer,
@@ -19,6 +19,7 @@ from .serializers import (
     RecruiterAssignmentHistorySerializer, AppSettingSerializer,
     FastGemUploadSerializer, FastGemUploadCreateSerializer,
     BulkStatusUpdateSerializer, BulkReassignSerializer, BulkDeleteSerializer,
+    JobMarketSerializer,
 )
 from .filters import CandidateFilter
 from .constants import (
@@ -581,6 +582,21 @@ class FastGemUploadViewSet(viewsets.ModelViewSet):
             current_status=PIPELINE_HIRED, is_deleted=False
         ).select_related('assigned_recruiter')
         return Response(CandidateListSerializer(candidates, many=True).data)
+
+
+class JobMarketViewSet(viewsets.ModelViewSet):
+    queryset = JobMarket.objects.all()
+    serializer_class = JobMarketSerializer
+    permission_classes = [IsAdminOrSubadmin]
+    search_fields = ['name']
+    filterset_fields = ['is_active']
+
+    @action(detail=True, methods=['post'])
+    def toggle_active(self, request, pk=None):
+        job_market = self.get_object()
+        job_market.is_active = not job_market.is_active
+        job_market.save(update_fields=['is_active'])
+        return Response(JobMarketSerializer(job_market).data)
 
 
 class AppSettingViewSet(viewsets.ModelViewSet):

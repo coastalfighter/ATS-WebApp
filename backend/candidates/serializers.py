@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import (
     Candidate, CandidateNote, CandidateActivityLog,
     UploadBatch, ImportRowError, RecruiterAssignmentHistory, AppSetting,
-    FastGemUpload,
+    FastGemUpload, JobMarket,
 )
 from accounts.serializers import UserSerializer
 
@@ -267,3 +267,10 @@ class BulkReassignSerializer(serializers.Serializer):
 
 class BulkDeleteSerializer(serializers.Serializer):
     candidate_ids = serializers.ListField(child=serializers.IntegerField(), min_length=1)
+
+
+class JobMarketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobMarket
+        fields = ['id', 'name', 'description', 'is_active', 'created_at']
+        read_only_fields = ['id', 'created_at']

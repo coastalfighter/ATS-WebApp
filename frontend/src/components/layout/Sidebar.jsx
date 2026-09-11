@@ -93,6 +93,12 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
           {isAdminOrSubadmin && (
             <>
               <div className="sidebar-section">Administration</div>
+              <NavLink to="/hiring-managers" className={linkClass} onClick={onClose} title="Hiring Managers">
+                <i className="bi bi-person-badge-fill"></i> <span>Hiring Managers</span>
+              </NavLink>
+              <NavLink to="/job-markets" className={linkClass} onClick={onClose} title="Job Markets">
+                <i className="bi bi-globe2"></i> <span>Job Markets</span>
+              </NavLink>
               <NavLink to="/users" className={linkClass} onClick={onClose} title="User Management">
                 <i className="bi bi-shield-lock-fill"></i> <span>User Management</span>
               </NavLink>

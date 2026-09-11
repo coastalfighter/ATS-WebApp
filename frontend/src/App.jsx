@@ -30,6 +30,8 @@ import ManageSlotsPage from './pages/ManageSlotsPage';
 import BookingsListPage from './pages/BookingsListPage';
 import ObservationPage from './pages/ObservationPage';
 import FastGemUploadPage from './pages/FastGemUploadPage';
+import JobMarketsPage from './pages/JobMarketsPage';
+import HiringManagersPage from './pages/HiringManagersPage';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -83,6 +85,12 @@ function AppRoutes() {
         } />
         <Route path="/fastgem" element={
           <ProtectedRoute roles={['admin', 'subadmin']}><FastGemUploadPage /></ProtectedRoute>
+        } />
+        <Route path="/job-markets" element={
+          <ProtectedRoute roles={['admin', 'subadmin']}><JobMarketsPage /></ProtectedRoute>
+        } />
+        <Route path="/hiring-managers" element={
+          <ProtectedRoute roles={['admin', 'subadmin']}><HiringManagersPage /></ProtectedRoute>
         } />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />

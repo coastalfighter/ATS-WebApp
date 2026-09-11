@@ -68,6 +68,8 @@ export const usersAPI = {
   toggleActive: (id) => api.post(`/auth/users/${id}/toggle_active/`),
   resetPassword: (data) => api.post('/auth/users/reset_password/', data),
   getRecruiters: (params) => api.get('/auth/users/recruiters/', { params }),
+  getTrainers: (params) => api.get('/auth/users/trainers/', { params }),
+  getHiringManagers: (params) => api.get('/auth/users/hiring_managers/', { params }),
 };
 
 export const candidatesAPI = {
@@ -107,6 +109,15 @@ export const fastgemAPI = {
   get: (id) => api.get(`/candidates/fastgem/${id}/`),
   create: (data) => api.post('/candidates/fastgem/', data),
   eligible: (params) => api.get('/candidates/fastgem/eligible/', { params }),
+};
+
+export const jobMarketsAPI = {
+  list: (params) => api.get('/candidates/job-markets/', { params }),
+  get: (id) => api.get(`/candidates/job-markets/${id}/`),
+  create: (data) => api.post('/candidates/job-markets/', data),
+  update: (id, data) => api.patch(`/candidates/job-markets/${id}/`, data),
+  delete: (id) => api.delete(`/candidates/job-markets/${id}/`),
+  toggleActive: (id) => api.post(`/candidates/job-markets/${id}/toggle_active/`),
 };
 
 export const batchesAPI = {

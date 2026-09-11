@@ -77,7 +77,7 @@ export default function ManageSlotsPage() {
     locationsAPI.list({ active_only: 'true' }).then(({ data }) => {
       setLocations(Array.isArray(data) ? data : data.results || []);
     }).catch(() => {});
-    usersAPI.getRecruiters({ active_only: true }).then(({ data }) => {
+    usersAPI.getHiringManagers({ active_only: true }).then(({ data }) => {
       setHiringManagers(Array.isArray(data) ? data : data.results || []);
     }).catch(() => {});
     zoomRoomsAPI.list().then(({ data }) => {
