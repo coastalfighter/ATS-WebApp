@@ -1,4 +1,5 @@
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 export default function Topbar({ onToggleSidebar }) {
   const { user, logout } = useAuth();
@@ -29,6 +30,8 @@ export default function Topbar({ onToggleSidebar }) {
           </kbd>
         </button>
         <div className="topbar-divider d-none d-md-block"></div>
+        <NotificationBell />
+        <div className="topbar-divider d-none d-sm-block"></div>
         <div className="topbar-avatar">{getInitials()}</div>
         <div className="topbar-user-info d-none d-sm-flex">
           <span className="topbar-user-name">{user?.full_name || user?.username}</span>

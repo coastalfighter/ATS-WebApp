@@ -224,6 +224,17 @@ class CandidateViewSet(viewsets.ModelViewSet):
             new_value=trainer.get_full_name(),
             performed_by=request.user,
         )
+
+        from notifications.services import NotificationService
+        NotificationService.notify_and_email(
+            recipient=trainer,
+            title='Trainee assigned to you',
+            message=f'{candidate.full_name} has been assigned to you for training by {request.user.get_full_name()}.',
+            event_type='assignment',
+            category='action',
+            link=f'/candidates/{candidate.id}',
+        )
+
         return Response(CandidateDetailSerializer(candidate).data)
 
     @action(detail=False, methods=['get'])

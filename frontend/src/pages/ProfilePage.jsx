@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authAPI } from '../services/api';
+import { authAPI, notificationsAPI } from '../services/api';
 import AlertMessage from '../components/common/AlertMessage';
 
 export default function ProfilePage() {
@@ -14,6 +14,22 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
+  const [prefs, setPrefs] = useState({
+    email_on_booking: true,
+    email_on_assignment: true,
+    email_on_interview: true,
+    email_on_status_change: true,
+    in_app_enabled: true,
+  });
+  const [prefsLoading, setPrefsLoading] = useState(true);
+
+  useEffect(() => {
+    notificationsAPI.getPreferences()
+      .then(({ data }) => setPrefs(data))
+      .catch(() => {})
+      .finally(() => setPrefsLoading(false));
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(''); setSuccess('');
@@ -23,6 +39,16 @@ export default function ProfilePage() {
       setSuccess('Profile updated.');
     } catch (err) {
       setError('Failed to update profile.');
+    }
+  };
+
+  const handlePrefToggle = async (key) => {
+    const updated = { ...prefs, [key]: !prefs[key] };
+    setPrefs(updated);
+    try {
+      await notificationsAPI.updatePreferences({ [key]: updated[key] });
+    } catch {
+      setPrefs(prefs);
     }
   };
 
@@ -74,6 +100,45 @@ export default function ProfilePage() {
               <i className="bi bi-check-lg"></i> Update Profile
             </button>
           </form>
+      </div>
+
+      <div className="table-container p-4 mt-4" style={{ maxWidth: '600px' }}>
+        <h5 className="mb-3">
+          <i className="bi bi-bell me-2"></i>Notification Preferences
+        </h5>
+        {prefsLoading ? (
+          <div className="text-center py-3">
+            <div className="spinner-border spinner-border-sm"></div>
+          </div>
+        ) : (
+          <div>
+            <div className="form-check form-switch mb-2">
+              <input className="form-check-input" type="checkbox" checked={prefs.in_app_enabled}
+                onChange={() => handlePrefToggle('in_app_enabled')} id="pref_inapp" />
+              <label className="form-check-label" htmlFor="pref_inapp">In-app notifications</label>
+            </div>
+            <div className="form-check form-switch mb-2">
+              <input className="form-check-input" type="checkbox" checked={prefs.email_on_assignment}
+                onChange={() => handlePrefToggle('email_on_assignment')} id="pref_assignment" />
+              <label className="form-check-label" htmlFor="pref_assignment">Email on candidate assignment</label>
+            </div>
+            <div className="form-check form-switch mb-2">
+              <input className="form-check-input" type="checkbox" checked={prefs.email_on_booking}
+                onChange={() => handlePrefToggle('email_on_booking')} id="pref_booking" />
+              <label className="form-check-label" htmlFor="pref_booking">Email on booking events</label>
+            </div>
+            <div className="form-check form-switch mb-2">
+              <input className="form-check-input" type="checkbox" checked={prefs.email_on_interview}
+                onChange={() => handlePrefToggle('email_on_interview')} id="pref_interview" />
+              <label className="form-check-label" htmlFor="pref_interview">Email on interview reminders</label>
+            </div>
+            <div className="form-check form-switch mb-2">
+              <input className="form-check-input" type="checkbox" checked={prefs.email_on_status_change}
+                onChange={() => handlePrefToggle('email_on_status_change')} id="pref_status" />
+              <label className="form-check-label" htmlFor="pref_status">Email on status changes</label>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -171,6 +171,15 @@ export const callLogsAPI = {
   create: (data) => api.post('/interviews/call-logs/', data),
 };
 
+export const notificationsAPI = {
+  list: (params) => api.get('/notifications/', { params }),
+  markRead: (id) => api.post(`/notifications/${id}/mark_read/`),
+  markAllRead: () => api.post('/notifications/mark-all-read/'),
+  unreadCount: () => api.get('/notifications/unread-count/'),
+  getPreferences: () => api.get('/notifications/preferences/'),
+  updatePreferences: (data) => api.patch('/notifications/preferences/', data),
+};
+
 export const dashboardAPI = {
   recruiter: (params) => api.get('/dashboard/recruiter/', { params }),
   admin: (params) => api.get('/dashboard/admin/', { params }),

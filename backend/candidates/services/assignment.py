@@ -61,6 +61,18 @@ class AssignmentService:
             performed_by=assigned_by,
             remarks=remarks or default_remarks,
         )
+
+        from notifications.services import NotificationService
+        verb = 'reassigned' if is_reassignment else 'assigned'
+        NotificationService.notify_and_email(
+            recipient=recruiter,
+            title=f'Candidate {verb} to you',
+            message=f'{candidate.full_name} has been {verb} to you by {assigned_by.get_full_name()}.',
+            event_type='assignment',
+            category='action',
+            link=f'/candidates/{candidate.id}',
+        )
+
         return candidate
 
     @classmethod

@@ -69,6 +69,18 @@ class BookingViewSet(viewsets.ModelViewSet):
             performed_by=self.request.user,
         )
 
+        from notifications.services import NotificationService
+        hm = booking.interview_slot.hiring_manager
+        if hm and hm != self.request.user:
+            NotificationService.notify_and_email(
+                recipient=hm,
+                title='New booking in your slot',
+                message=f'{booking.candidate.full_name} has been booked into your interview slot on {booking.interview_slot.date}.',
+                event_type='booking',
+                category='info',
+                link=f'/candidates/{booking.candidate.id}',
+            )
+
     @action(detail=True, methods=['post'])
     def confirm(self, request, pk=None):
         booking = self.get_object()
@@ -111,6 +123,18 @@ class BookingViewSet(viewsets.ModelViewSet):
             new_value='confirmed',
             performed_by=request.user,
         )
+
+        from notifications.services import NotificationService
+        recruiter = booking.candidate.assigned_recruiter
+        if recruiter and recruiter != request.user:
+            NotificationService.notify_and_email(
+                recipient=recruiter,
+                title='Booking confirmed',
+                message=f'Booking for {booking.candidate.full_name} has been confirmed for {booking.interview_slot.date}.',
+                event_type='booking',
+                category='info',
+                link=f'/candidates/{booking.candidate.id}',
+            )
 
         create_zoom_meeting_task.delay(interview.id)
         create_calendar_event_task.delay(interview.id)

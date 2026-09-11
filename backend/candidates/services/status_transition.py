@@ -87,4 +87,15 @@ class StatusTransitionService:
             remarks=remarks or ('Admin override' if is_admin_override else ''),
         )
 
+        if candidate.assigned_recruiter and candidate.assigned_recruiter != user:
+            from notifications.services import NotificationService
+            NotificationService.notify_and_email(
+                recipient=candidate.assigned_recruiter,
+                title='Candidate status updated',
+                message=f'{candidate.full_name} status changed from "{old_status}" to "{candidate.current_status}".',
+                event_type='status_change',
+                category='info',
+                link=f'/candidates/{candidate.id}',
+            )
+
         return candidate
