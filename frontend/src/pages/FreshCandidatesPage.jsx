@@ -6,6 +6,7 @@ import AlertMessage from '../components/common/AlertMessage';
 import StatusUpdateModal from '../components/common/StatusUpdateModal';
 import { STATUS_LABELS, getStatusBadgeClass } from '../utils/statusHelpers';
 import ClickToCallButton from '../components/candidates/ClickToCallButton';
+import BulkActionToolbar from '../components/candidates/BulkActionToolbar';
 
 const AVATAR_COLORS = [
   '#4f46e5', '#7c3aed', '#db2777', '#dc2626', '#ea580c',
@@ -55,6 +56,7 @@ export default function FreshCandidatesPage() {
     not_interested: 0, callback: 0, closed: 0, interested: 0,
   });
   const [convertingId, setConvertingId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const totalPages = Math.ceil(count / rowsPerPage);
 
@@ -132,6 +134,24 @@ export default function FreshCandidatesPage() {
   };
 
   const handleRefresh = () => {
+    loadCandidates();
+    loadSummary();
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === candidates.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(candidates.map(c => c.id));
+    }
+  };
+
+  const handleBulkComplete = () => {
+    setSelectedIds([]);
     loadCandidates();
     loadSummary();
   };
@@ -227,9 +247,14 @@ export default function FreshCandidatesPage() {
 
       {/* Pagination Controls */}
       <div className="fl-controls">
-        <span className="fl-showing">
+        <div className="d-flex align-items-center gap-2">
+          <input type="checkbox" className="form-check-input"
+            checked={candidates.length > 0 && selectedIds.length === candidates.length}
+            onChange={toggleSelectAll} title="Select all" />
+          <span className="fl-showing">
           Showing <strong>{count > 0 ? startIdx : 0}&ndash;{endIdx}</strong> of <strong>{count}</strong> server-filtered leads
         </span>
+        </div>
         <div className="fl-controls-right">
           <div className="fl-control-group">
             <label className="fl-control-label">Rows per page</label>
@@ -255,6 +280,8 @@ export default function FreshCandidatesPage() {
         </div>
       </div>
 
+      <BulkActionToolbar selectedIds={selectedIds} onComplete={handleBulkComplete} bucket="fresh" />
+
       {/* Candidate Cards */}
       {loading ? <LoadingSpinner /> : (
         <div className="fl-cards">
@@ -271,6 +298,9 @@ export default function FreshCandidatesPage() {
               <div key={c.id} className="fl-card">
                 {/* Card Header */}
                 <div className="fl-card-header">
+                  <input type="checkbox" className="form-check-input bulk-check"
+                    checked={selectedIds.includes(c.id)}
+                    onChange={() => toggleSelect(c.id)} />
                   <div className="fl-avatar" style={{ backgroundColor: color }}>
                     {initial}
                   </div>

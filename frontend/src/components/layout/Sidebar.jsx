@@ -52,6 +52,11 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
               <i className="bi bi-files"></i> <span>Duplicates</span>
             </NavLink>
           )}
+          {isAdminOrSubadmin && (
+            <NavLink to="/fastgem" className={linkClass} onClick={onClose} title="FastGem Upload">
+              <i className="bi bi-lightning-fill"></i> <span>FastGem Upload</span>
+            </NavLink>
+          )}
 
           <div className="sidebar-section">Scheduling</div>
           <NavLink to="/interviews" className={linkClass} onClick={onClose} title="Interviews">

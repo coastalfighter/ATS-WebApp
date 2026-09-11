@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { settingsAPI, emailTemplatesAPI } from '../services/api';
+import { settingsAPI, emailTemplatesAPI, usersAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 
@@ -252,6 +252,12 @@ export default function AdminSettingsPage() {
             <i className="bi bi-envelope-paper me-1"></i> Email Templates
           </button>
         </li>
+        <li className="nav-item">
+          <button className={`nav-link ${activeTab === 'kpi' ? 'active' : ''}`}
+            onClick={() => setActiveTab('kpi')}>
+            <i className="bi bi-bullseye me-1"></i> KPI Settings
+          </button>
+        </li>
       </ul>
 
       {activeTab === 'general' && (
@@ -347,6 +353,10 @@ export default function AdminSettingsPage() {
       {activeTab === 'templates' && (
         <EmailTemplatesTab onSuccess={(msg) => { setSuccess(msg); setError(''); }}
           onError={(msg) => { setError(msg); setSuccess(''); }} />
+      )}
+
+      {activeTab === 'kpi' && (
+        <KPISettingsTab settings={settings} onUpdate={handleIntegrationUpdate} />
       )}
     </div>
   );
@@ -462,6 +472,137 @@ function EmailTemplatesTab({ onSuccess, onError }) {
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+function KPISettingsTab({ settings, onUpdate }) {
+  const [globalCallTarget, setGlobalCallTarget] = useState('');
+  const [globalBookingTarget, setGlobalBookingTarget] = useState('');
+  const [recruiters, setRecruiters] = useState([]);
+  const [recruiterTargets, setRecruiterTargets] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const callSetting = settings.find(s => s.key === 'default_daily_call_target');
+    const bookingSetting = settings.find(s => s.key === 'default_daily_booking_target');
+    setGlobalCallTarget(callSetting?.value || '0');
+    setGlobalBookingTarget(bookingSetting?.value || '0');
+    usersAPI.getRecruiters({ active_only: true })
+      .then(({ data }) => {
+        const recs = Array.isArray(data) ? data : data.results || [];
+        setRecruiters(recs);
+        const targets = {};
+        recs.forEach(r => {
+          targets[r.id] = {
+            daily_call_target: r.daily_call_target || 0,
+            daily_booking_target: r.daily_booking_target || 0,
+          };
+        });
+        setRecruiterTargets(targets);
+      })
+      .catch(() => {});
+  }, [settings]);
+
+  const handleSaveGlobal = async () => {
+    setSaving(true);
+    try {
+      await settingsAPI.update('default_daily_call_target', { value: globalCallTarget });
+      await settingsAPI.update('default_daily_booking_target', { value: globalBookingTarget });
+      onUpdate('Global KPI targets saved.');
+    } catch {
+      onUpdate(null, 'Failed to save global targets.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveRecruiter = async (recruiterId) => {
+    const targets = recruiterTargets[recruiterId];
+    if (!targets) return;
+    try {
+      await usersAPI.update(recruiterId, {
+        daily_call_target: parseInt(targets.daily_call_target) || 0,
+        daily_booking_target: parseInt(targets.daily_booking_target) || 0,
+      });
+      onUpdate('Recruiter KPI targets saved.');
+    } catch {
+      onUpdate(null, 'Failed to save recruiter targets.');
+    }
+  };
+
+  return (
+    <div>
+      <div className="table-container p-3 mb-4">
+        <h6 className="mb-3">
+          <i className="bi bi-globe me-2"></i>Global Default Targets
+        </h6>
+        <p className="text-muted mb-3" style={{fontSize:'0.85rem'}}>
+          These targets apply to all recruiters who don't have individual targets set.
+        </p>
+        <div className="row g-3">
+          <div className="col-md-4">
+            <label className="form-label">Daily Call Target</label>
+            <input type="number" className="form-control form-control-sm" min="0"
+              value={globalCallTarget} onChange={(e) => setGlobalCallTarget(e.target.value)} />
+          </div>
+          <div className="col-md-4">
+            <label className="form-label">Daily Booking Target</label>
+            <input type="number" className="form-control form-control-sm" min="0"
+              value={globalBookingTarget} onChange={(e) => setGlobalBookingTarget(e.target.value)} />
+          </div>
+          <div className="col-md-4 d-flex align-items-end">
+            <button className="btn btn-primary btn-sm" onClick={handleSaveGlobal} disabled={saving}>
+              <i className="bi bi-check-lg me-1"></i>{saving ? 'Saving...' : 'Save Global Targets'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="table-container">
+        <div className="p-3 border-bottom d-flex align-items-center gap-2">
+          <i className="bi bi-person-badge" style={{ color: 'var(--primary)' }}></i>
+          <h6 className="mb-0">Per-Recruiter Targets</h6>
+        </div>
+        <table className="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Recruiter</th>
+              <th style={{width:'140px'}}>Call Target</th>
+              <th style={{width:'140px'}}>Booking Target</th>
+              <th style={{width:'80px'}}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recruiters.map((r) => (
+              <tr key={r.id}>
+                <td className="fw-medium">{r.full_name || `${r.first_name} ${r.last_name}`}</td>
+                <td>
+                  <input type="number" className="form-control form-control-sm" min="0"
+                    value={recruiterTargets[r.id]?.daily_call_target || 0}
+                    onChange={(e) => setRecruiterTargets({
+                      ...recruiterTargets,
+                      [r.id]: { ...recruiterTargets[r.id], daily_call_target: e.target.value }
+                    })} />
+                </td>
+                <td>
+                  <input type="number" className="form-control form-control-sm" min="0"
+                    value={recruiterTargets[r.id]?.daily_booking_target || 0}
+                    onChange={(e) => setRecruiterTargets({
+                      ...recruiterTargets,
+                      [r.id]: { ...recruiterTargets[r.id], daily_booking_target: e.target.value }
+                    })} />
+                </td>
+                <td>
+                  <button className="btn btn-outline-primary btn-sm py-0" onClick={() => handleSaveRecruiter(r.id)}>
+                    <i className="bi bi-check-lg"></i>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

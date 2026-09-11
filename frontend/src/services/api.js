@@ -97,6 +97,16 @@ export const candidatesAPI = {
   uploadPreview: (formData) => api.post('/candidates/upload/preview/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+  bulkUpdateStatus: (data) => api.post('/candidates/bulk/update_status/', data),
+  bulkReassign: (data) => api.post('/candidates/bulk/reassign/', data),
+  bulkDelete: (data) => api.post('/candidates/bulk/delete/', data),
+};
+
+export const fastgemAPI = {
+  list: (params) => api.get('/candidates/fastgem/', { params }),
+  get: (id) => api.get(`/candidates/fastgem/${id}/`),
+  create: (data) => api.post('/candidates/fastgem/', data),
+  eligible: (params) => api.get('/candidates/fastgem/eligible/', { params }),
 };
 
 export const batchesAPI = {
@@ -197,6 +207,10 @@ export const reportsAPI = {
   dailyTrends: (params) => api.get('/reports/daily-trends/', { params }),
   recruiterProductivity: (params) => api.get('/reports/recruiter-productivity/', { params }),
   exportCSV: (params) => api.get('/reports/export-csv/', { params, responseType: 'blob' }),
+  kpiAttainment: (params) => api.get('/reports/kpi-attainment/', { params }),
+  bookingSummary: (params) => api.get('/reports/booking-summary/', { params }),
+  round2Summary: (params) => api.get('/reports/round2-summary/', { params }),
+  recruiterLeaderboard: (params) => api.get('/reports/recruiter-leaderboard/', { params }),
 };
 
 export const integrationsAPI = {

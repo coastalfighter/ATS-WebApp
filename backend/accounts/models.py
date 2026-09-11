@@ -12,6 +12,8 @@ class User(AbstractUser):
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.RECRUITER)
     phone = models.CharField(max_length=20, blank=True)
+    daily_call_target = models.IntegerField(default=0)
+    daily_booking_target = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

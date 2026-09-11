@@ -88,6 +88,7 @@ class Candidate(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='updated_candidates'
     )
+    is_deleted = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -179,3 +180,28 @@ class AppSetting(models.Model):
             return cls.objects.get(key=key).value
         except cls.DoesNotExist:
             return default
+
+
+class FastGemUpload(models.Model):
+    UPLOAD_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('uploaded', 'Uploaded'),
+        ('failed', 'Failed'),
+    ]
+
+    candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='fastgem_uploads')
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='fastgem_uploads'
+    )
+    upload_data = models.JSONField(default=dict)
+    status = models.CharField(max_length=20, choices=UPLOAD_STATUS_CHOICES, default='pending')
+    external_reference_id = models.CharField(max_length=255, blank=True)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"FastGem #{self.id} - {self.candidate} ({self.status})"

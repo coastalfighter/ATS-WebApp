@@ -7,6 +7,7 @@ import AlertMessage from '../components/common/AlertMessage';
 import Pagination from '../components/common/Pagination';
 import StatusUpdateModal from '../components/common/StatusUpdateModal';
 import { STATUS_LABELS, BUCKET_LABELS, getStatusBadgeClass, formatDate } from '../utils/statusHelpers';
+import BulkActionToolbar from '../components/candidates/BulkActionToolbar';
 
 export default function AllCandidatesPage() {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function AllCandidatesPage() {
   const [ordering, setOrdering] = useState('-created_at');
   const [recruiters, setRecruiters] = useState([]);
   const [statusCandidate, setStatusCandidate] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     if (isAdminOrSubadmin) {
@@ -92,6 +94,9 @@ export default function AllCandidatesPage() {
       </div>
 
       <AlertMessage message={error} onClose={() => setError('')} />
+
+      <BulkActionToolbar selectedIds={selectedIds}
+        onComplete={() => { setSelectedIds([]); loadCandidates(); }} />
 
       <div className="filter-bar">
         <form onSubmit={handleSearch} className="row g-2 align-items-end">
@@ -166,6 +171,14 @@ export default function AllCandidatesPage() {
             <table className="table table-hover table-sm">
               <thead>
                 <tr>
+                  <th style={{width:'30px'}}>
+                    <input type="checkbox" className="form-check-input"
+                      checked={candidates.length > 0 && selectedIds.length === candidates.length}
+                      onChange={() => {
+                        if (selectedIds.length === candidates.length) setSelectedIds([]);
+                        else setSelectedIds(candidates.map(c => c.id));
+                      }} />
+                  </th>
                   <SortHeader field="first_name">Name</SortHeader>
                   <th>Email</th>
                   <th>Phone</th>
@@ -179,9 +192,14 @@ export default function AllCandidatesPage() {
               </thead>
               <tbody>
                 {candidates.length === 0 ? (
-                  <tr><td colSpan="9" className="text-center text-muted py-4">No candidates found.</td></tr>
+                  <tr><td colSpan="10" className="text-center text-muted py-4">No candidates found.</td></tr>
                 ) : candidates.map((c) => (
                   <tr key={c.id}>
+                    <td>
+                      <input type="checkbox" className="form-check-input"
+                        checked={selectedIds.includes(c.id)}
+                        onChange={() => setSelectedIds(prev => prev.includes(c.id) ? prev.filter(i => i !== c.id) : [...prev, c.id])} />
+                    </td>
                     <td className="fw-medium cursor-pointer" onClick={() => navigate(`/candidates/${c.id}`)}>
                       {c.first_name} {c.last_name}
                     </td>

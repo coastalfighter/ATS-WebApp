@@ -15,6 +15,10 @@ const REPORTS = [
   { key: 'duplicates', label: 'Duplicate Report', icon: 'bi-files' },
   { key: 'dailyTrends', label: 'Daily Trends', icon: 'bi-graph-up' },
   { key: 'recruiterProductivity', label: 'Recruiter Productivity', icon: 'bi-speedometer2' },
+  { key: 'kpiAttainment', label: 'KPI Attainment', icon: 'bi-bullseye' },
+  { key: 'bookingSummary', label: 'Booking Analytics', icon: 'bi-calendar-check' },
+  { key: 'round2Summary', label: 'Round 2 Analytics', icon: 'bi-clipboard-data' },
+  { key: 'recruiterLeaderboard', label: 'KPI Leaderboard', icon: 'bi-trophy' },
 ];
 
 export default function ReportsPage() {
@@ -28,6 +32,8 @@ export default function ReportsPage() {
 
   useEffect(() => { loadReport(); }, [activeReport]);
 
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState('daily');
+
   const loadReport = async () => {
     setLoading(true);
     setError('');
@@ -36,6 +42,9 @@ export default function ReportsPage() {
       const params = {};
       if (['dailyTrends', 'recruiterProductivity'].includes(activeReport)) {
         params.days = days;
+      }
+      if (activeReport === 'recruiterLeaderboard') {
+        params.period = leaderboardPeriod;
       }
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
@@ -286,6 +295,107 @@ export default function ReportsPage() {
           </div>
         );
 
+      case 'kpiAttainment':
+        return (
+          <div>
+            <table className="table table-sm">
+              <thead><tr><th>Recruiter</th><th className="text-end">Calls</th><th className="text-end">Target</th><th className="text-end">Attainment</th><th className="text-end">Bookings</th><th className="text-end">Target</th><th className="text-end">Attainment</th><th className="text-end">Status Changes</th></tr></thead>
+              <tbody>
+                {(Array.isArray(data) ? data : []).map((r) => (
+                  <tr key={r.recruiter_id}>
+                    <td>{r.recruiter_name}</td>
+                    <td className="text-end">{r.calls_today}</td>
+                    <td className="text-end">{r.call_target}</td>
+                    <td className="text-end"><span className={`badge bg-${r.call_attainment >= 100 ? 'success' : r.call_attainment >= 50 ? 'primary' : 'warning'}`}>{r.call_attainment}%</span></td>
+                    <td className="text-end">{r.bookings_today}</td>
+                    <td className="text-end">{r.booking_target}</td>
+                    <td className="text-end"><span className={`badge bg-${r.booking_attainment >= 100 ? 'success' : r.booking_attainment >= 50 ? 'primary' : 'warning'}`}>{r.booking_attainment}%</span></td>
+                    <td className="text-end">{r.status_changes_today}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+
+      case 'bookingSummary':
+        return (
+          <div>
+            <div className="row g-3 mb-4">
+              <div className="col-md-3"><div className="stat-card text-center"><div className="stat-value">{data.total_bookings}</div><div className="stat-label">Total Bookings</div></div></div>
+              <div className="col-md-3"><div className="stat-card text-center"><div className="stat-value text-success">{data.confirmed}</div><div className="stat-label">Confirmed</div></div></div>
+              <div className="col-md-3"><div className="stat-card text-center"><div className="stat-value text-danger">{data.cancelled}</div><div className="stat-label">Cancelled</div></div></div>
+              <div className="col-md-3"><div className="stat-card text-center"><div className="stat-value text-warning">{data.no_show}</div><div className="stat-label">No Show</div></div></div>
+            </div>
+            <div className="row g-3 mb-3">
+              <div className="col-md-4"><div className="stat-card text-center"><div className="stat-value">{data.pipeline_total}</div><div className="stat-label">Pipeline Total</div></div></div>
+              <div className="col-md-4"><div className="stat-card text-center"><div className="stat-value">{data.hired_total}</div><div className="stat-label">Hired</div></div></div>
+              <div className="col-md-4"><div className="stat-card text-center"><div className="stat-value">{data.conversion_rate}%</div><div className="stat-label">Conversion Rate</div></div></div>
+            </div>
+            {data.by_location && data.by_location.length > 0 && (
+              <>
+                <h6 className="mt-3">Bookings by Location</h6>
+                {renderBarChart(data.by_location, (i) => i.interview_slot__location__name || 'Unknown', 'count')}
+              </>
+            )}
+          </div>
+        );
+
+      case 'round2Summary':
+        return (
+          <div>
+            <div className="row g-3 mb-4">
+              <div className="col-md-3"><div className="stat-card text-center"><div className="stat-value">{data.round2_scheduled}</div><div className="stat-label">Scheduled</div></div></div>
+              <div className="col-md-3"><div className="stat-card text-center"><div className="stat-value text-success">{data.round2_completed}</div><div className="stat-label">Completed</div></div></div>
+              <div className="col-md-3"><div className="stat-card text-center"><div className="stat-value text-danger">{data.round2_rejected}</div><div className="stat-label">Rejected</div></div></div>
+              <div className="col-md-3"><div className="stat-card text-center"><div className="stat-value">{data.pass_rate}%</div><div className="stat-label">Pass Rate</div></div></div>
+            </div>
+            <div className="row g-3 mb-4">
+              <div className="col-md-6"><div className="stat-card text-center"><div className="stat-value">{data.avg_observation_score}</div><div className="stat-label">Avg Observation Score</div></div></div>
+              <div className="col-md-6"><div className="stat-card text-center"><div className="stat-value">{data.total_observations}</div><div className="stat-label">Total Observations</div></div></div>
+            </div>
+            {data.trainer_stats && data.trainer_stats.length > 0 && (
+              <table className="table table-sm mt-3">
+                <thead><tr><th>Trainer</th><th className="text-end">Observations</th><th className="text-end">Avg Performance</th><th className="text-end">Avg Communication</th><th className="text-end">Avg Technical</th></tr></thead>
+                <tbody>
+                  {data.trainer_stats.map((t, i) => (
+                    <tr key={i}>
+                      <td>{t.trainer__first_name} {t.trainer__last_name}</td>
+                      <td className="text-end">{t.total_observations}</td>
+                      <td className="text-end">{(t.avg_performance || 0).toFixed(1)}</td>
+                      <td className="text-end">{(t.avg_communication || 0).toFixed(1)}</td>
+                      <td className="text-end">{(t.avg_technical || 0).toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
+
+      case 'recruiterLeaderboard':
+        return (
+          <div>
+            {renderBarChart(Array.isArray(data) ? data : [], (r) => r.recruiter_name, 'score')}
+            <table className="table table-sm mt-3">
+              <thead><tr><th>#</th><th>Recruiter</th><th className="text-end">Calls</th><th className="text-end">Bookings</th><th className="text-end">Hires</th><th className="text-end">Status Changes</th><th className="text-end">Score</th></tr></thead>
+              <tbody>
+                {(Array.isArray(data) ? data : []).map((r) => (
+                  <tr key={r.recruiter_id}>
+                    <td><span className={`badge bg-${r.rank <= 3 ? 'warning' : 'secondary'}`}>{r.rank}</span></td>
+                    <td className="fw-medium">{r.recruiter_name}</td>
+                    <td className="text-end">{r.calls}</td>
+                    <td className="text-end">{r.bookings}</td>
+                    <td className="text-end">{r.hires}</td>
+                    <td className="text-end">{r.status_changes}</td>
+                    <td className="text-end fw-bold">{r.score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+
       default:
         return <pre>{JSON.stringify(data, null, 2)}</pre>;
     }
@@ -333,6 +443,16 @@ export default function ReportsPage() {
                     <option value="30">Last 30 days</option>
                     <option value="60">Last 60 days</option>
                     <option value="90">Last 90 days</option>
+                  </select>
+                </div>
+              )}
+              {activeReport === 'recruiterLeaderboard' && (
+                <div className="col-md-2">
+                  <select className="form-select form-select-sm" value={leaderboardPeriod}
+                    onChange={(e) => setLeaderboardPeriod(e.target.value)}>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
                   </select>
                 </div>
               )}

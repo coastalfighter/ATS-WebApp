@@ -5,11 +5,13 @@ from . import views
 router = DefaultRouter()
 router.register(r'batches', views.UploadBatchViewSet, basename='upload-batch')
 router.register(r'settings', views.AppSettingViewSet, basename='app-setting')
+router.register(r'fastgem', views.FastGemUploadViewSet, basename='fastgem')
 router.register(r'', views.CandidateViewSet, basename='candidate')
 
 urlpatterns = [
     path('upload/', views.UploadView.as_view(), name='upload'),
     path('upload/preview/', views.UploadPreviewView.as_view(), name='upload-preview'),
     path('activity-log/', views.ActivityLogListView.as_view(), name='activity-log'),
+    path('bulk/<str:action_type>/', views.BulkOperationsView.as_view(), name='bulk-operation'),
     path('', include(router.urls)),
 ]

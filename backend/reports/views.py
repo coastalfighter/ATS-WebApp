@@ -1,19 +1,22 @@
 import csv
 from django.http import HttpResponse
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Avg
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.permissions import IsAdminOrSubadmin
-from candidates.models import Candidate, UploadBatch, CandidateActivityLog
+from candidates.models import Candidate, UploadBatch, CandidateActivityLog, AppSetting
 from candidates.constants import (
     BUCKET_FRESH, BUCKET_PIPELINE,
     FRESH_CONTACTED, FRESH_NEVER_CONTACTED,
     FRESH_NOT_INTERESTED, FRESH_WRONG_NUMBER, FRESH_INVALID_CONTACT,
     FRESH_DO_NOT_CONTACT, FRESH_DUPLICATE,
-    PIPELINE_INTERESTED,
+    PIPELINE_INTERESTED, PIPELINE_HIRED, PIPELINE_JOINED,
+    PIPELINE_SELECTED, PIPELINE_REJECTED,
+    PIPELINE_ROUND2_COMPLETED, PIPELINE_ROUND2_SCHEDULED,
     ACTION_STATUS_CHANGED,
 )
 
@@ -214,3 +217,205 @@ class ExportCandidatesCSVView(APIView):
             ])
 
         return response
+
+
+class KPIAttainmentReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from accounts.models import User
+        from interviews.models import CallLog
+
+        today = timezone.now().date()
+        recruiters = User.objects.filter(role='recruiter', is_active=True)
+
+        global_call_target = int(AppSetting.get('default_daily_call_target', '0'))
+        global_booking_target = int(AppSetting.get('default_daily_booking_target', '0'))
+
+        results = []
+        for rec in recruiters:
+            call_target = rec.daily_call_target or global_call_target
+            booking_target = rec.daily_booking_target or global_booking_target
+
+            calls_today = CallLog.objects.filter(
+                initiated_by=rec, created_at__date=today
+            ).count()
+
+            from bookings.models import Booking
+            bookings_today = Booking.objects.filter(
+                booked_by=rec, created_at__date=today
+            ).count()
+
+            status_changes_today = CandidateActivityLog.objects.filter(
+                performed_by=rec,
+                action_type=ACTION_STATUS_CHANGED,
+                created_at__date=today,
+            ).count()
+
+            results.append({
+                'recruiter_id': rec.id,
+                'recruiter_name': rec.get_full_name(),
+                'calls_today': calls_today,
+                'call_target': call_target,
+                'call_attainment': round((calls_today / max(call_target, 1)) * 100, 1),
+                'bookings_today': bookings_today,
+                'booking_target': booking_target,
+                'booking_attainment': round((bookings_today / max(booking_target, 1)) * 100, 1),
+                'status_changes_today': status_changes_today,
+            })
+
+        return Response(results)
+
+
+class BookingSummaryReportView(APIView):
+    permission_classes = [IsAdminOrSubadmin]
+
+    def get(self, request):
+        from bookings.models import Booking
+
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+
+        qs = Booking.objects.all()
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
+
+        total_bookings = qs.count()
+        confirmed = qs.filter(status='confirmed').count()
+        cancelled = qs.filter(status='cancelled').count()
+        no_show = qs.filter(status='no_show').count()
+
+        by_location = list(
+            qs.values('interview_slot__location__name')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:10]
+        )
+
+        total_pipeline = Candidate.objects.filter(current_bucket=BUCKET_PIPELINE).count()
+        total_hired = Candidate.objects.filter(current_status=PIPELINE_HIRED).count()
+
+        return Response({
+            'total_bookings': total_bookings,
+            'confirmed': confirmed,
+            'cancelled': cancelled,
+            'no_show': no_show,
+            'by_location': by_location,
+            'pipeline_total': total_pipeline,
+            'hired_total': total_hired,
+            'conversion_rate': round((total_hired / max(total_bookings, 1)) * 100, 2),
+        })
+
+
+class Round2SummaryReportView(APIView):
+    permission_classes = [IsAdminOrSubadmin]
+
+    def get(self, request):
+        from interviews.models import ObservationSheet
+
+        round2_scheduled = Candidate.objects.filter(
+            current_status=PIPELINE_ROUND2_SCHEDULED
+        ).count()
+        round2_completed = Candidate.objects.filter(
+            current_status=PIPELINE_ROUND2_COMPLETED
+        ).count()
+        round2_rejected = CandidateActivityLog.objects.filter(
+            action_type=ACTION_STATUS_CHANGED,
+            old_value__in=[PIPELINE_ROUND2_SCHEDULED, PIPELINE_ROUND2_COMPLETED],
+            new_value=PIPELINE_REJECTED,
+        ).count()
+
+        total_round2 = round2_scheduled + round2_completed + round2_rejected
+        pass_rate = round((round2_completed / max(total_round2, 1)) * 100, 1) if total_round2 else 0
+
+        obs_stats = ObservationSheet.objects.aggregate(
+            avg_perf=Avg('performance_score'),
+            avg_comm=Avg('communication_score'),
+            avg_tech=Avg('technical_score'),
+            total=Count('id'),
+        )
+        avg_score = 0
+        if obs_stats['total']:
+            avg_score = round(((obs_stats['avg_perf'] or 0) + (obs_stats['avg_comm'] or 0) + (obs_stats['avg_tech'] or 0)) / 3, 2)
+
+        trainer_stats = list(
+            ObservationSheet.objects.values(
+                'trainer__first_name', 'trainer__last_name'
+            ).annotate(
+                total_observations=Count('id'),
+                avg_performance=Avg('performance_score'),
+                avg_communication=Avg('communication_score'),
+                avg_technical=Avg('technical_score'),
+            ).order_by('-total_observations')[:10]
+        )
+
+        return Response({
+            'round2_scheduled': round2_scheduled,
+            'round2_completed': round2_completed,
+            'round2_rejected': round2_rejected,
+            'pass_rate': pass_rate,
+            'avg_observation_score': avg_score,
+            'total_observations': obs_stats['total'],
+            'trainer_stats': trainer_stats,
+        })
+
+
+class RecruiterLeaderboardReportView(APIView):
+    permission_classes = [IsAdminOrSubadmin]
+
+    def get(self, request):
+        from interviews.models import CallLog
+        from bookings.models import Booking
+
+        period = request.query_params.get('period', 'daily')
+        today = timezone.now().date()
+
+        if period == 'weekly':
+            start_date = today - timezone.timedelta(days=7)
+        elif period == 'monthly':
+            start_date = today - timezone.timedelta(days=30)
+        else:
+            start_date = today
+
+        from accounts.models import User
+        recruiters = User.objects.filter(role='recruiter', is_active=True)
+
+        results = []
+        for rec in recruiters:
+            calls = CallLog.objects.filter(
+                initiated_by=rec, created_at__date__gte=start_date
+            ).count()
+
+            bookings = Booking.objects.filter(
+                booked_by=rec, created_at__date__gte=start_date
+            ).count()
+
+            hires = CandidateActivityLog.objects.filter(
+                performed_by=rec,
+                action_type=ACTION_STATUS_CHANGED,
+                new_value__in=[PIPELINE_HIRED, PIPELINE_JOINED, PIPELINE_SELECTED],
+                created_at__date__gte=start_date,
+            ).count()
+
+            status_changes = CandidateActivityLog.objects.filter(
+                performed_by=rec,
+                action_type=ACTION_STATUS_CHANGED,
+                created_at__date__gte=start_date,
+            ).count()
+
+            results.append({
+                'recruiter_id': rec.id,
+                'recruiter_name': rec.get_full_name(),
+                'calls': calls,
+                'bookings': bookings,
+                'hires': hires,
+                'status_changes': status_changes,
+                'score': calls + (bookings * 5) + (hires * 10),
+            })
+
+        results.sort(key=lambda x: x['score'], reverse=True)
+        for i, r in enumerate(results):
+            r['rank'] = i + 1
+
+        return Response(results)

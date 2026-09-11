@@ -29,6 +29,7 @@ import CallLogsPage from './pages/CallLogsPage';
 import ManageSlotsPage from './pages/ManageSlotsPage';
 import BookingsListPage from './pages/BookingsListPage';
 import ObservationPage from './pages/ObservationPage';
+import FastGemUploadPage from './pages/FastGemUploadPage';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -79,6 +80,9 @@ function AppRoutes() {
         } />
         <Route path="/email-logs" element={
           <ProtectedRoute roles={['admin', 'subadmin']}><EmailLogsPage /></ProtectedRoute>
+        } />
+        <Route path="/fastgem" element={
+          <ProtectedRoute roles={['admin', 'subadmin']}><FastGemUploadPage /></ProtectedRoute>
         } />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />

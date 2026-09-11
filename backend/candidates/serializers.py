@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import (
     Candidate, CandidateNote, CandidateActivityLog,
     UploadBatch, ImportRowError, RecruiterAssignmentHistory, AppSetting,
+    FastGemUpload,
 )
 from accounts.serializers import UserSerializer
 
@@ -198,3 +199,46 @@ class AppSettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppSetting
         fields = ['id', 'key', 'value', 'description', 'updated_at']
+
+
+class FastGemUploadSerializer(serializers.ModelSerializer):
+    candidate_name = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FastGemUpload
+        fields = [
+            'id', 'candidate', 'candidate_name', 'uploaded_by', 'uploaded_by_name',
+            'upload_data', 'status', 'external_reference_id', 'error_message',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'uploaded_by', 'status', 'created_at', 'updated_at']
+
+    def get_candidate_name(self, obj):
+        return obj.candidate.full_name if obj.candidate else None
+
+    def get_uploaded_by_name(self, obj):
+        return obj.uploaded_by.get_full_name() if obj.uploaded_by else None
+
+
+class FastGemUploadCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FastGemUpload
+        fields = ['candidate', 'upload_data', 'external_reference_id']
+
+
+class BulkStatusUpdateSerializer(serializers.Serializer):
+    candidate_ids = serializers.ListField(child=serializers.IntegerField(), min_length=1)
+    status = serializers.CharField()
+    remarks = serializers.CharField(required=False, default='')
+    is_admin_override = serializers.BooleanField(required=False, default=False)
+
+
+class BulkReassignSerializer(serializers.Serializer):
+    candidate_ids = serializers.ListField(child=serializers.IntegerField(), min_length=1)
+    recruiter_id = serializers.IntegerField()
+    remarks = serializers.CharField(required=False, default='')
+
+
+class BulkDeleteSerializer(serializers.Serializer):
+    candidate_ids = serializers.ListField(child=serializers.IntegerField(), min_length=1)

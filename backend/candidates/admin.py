@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     Candidate, CandidateNote, CandidateActivityLog,
     UploadBatch, ImportRowError, RecruiterAssignmentHistory, AppSetting,
+    FastGemUpload,
 )
 
 
@@ -46,3 +47,10 @@ class RecruiterAssignmentHistoryAdmin(admin.ModelAdmin):
 @admin.register(AppSetting)
 class AppSettingAdmin(admin.ModelAdmin):
     list_display = ['key', 'value', 'description', 'updated_at']
+
+
+@admin.register(FastGemUpload)
+class FastGemUploadAdmin(admin.ModelAdmin):
+    list_display = ['id', 'candidate', 'uploaded_by', 'status', 'external_reference_id', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['candidate__first_name', 'candidate__last_name', 'external_reference_id']

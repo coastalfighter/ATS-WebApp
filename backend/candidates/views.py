@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from accounts.permissions import IsAdminOrSubadmin, IsAdminOrSubadminOrRecruiter
 from .models import (
     Candidate, CandidateNote, CandidateActivityLog,
-    UploadBatch, AppSetting,
+    UploadBatch, AppSetting, FastGemUpload,
 )
 from .serializers import (
     CandidateListSerializer, CandidateDetailSerializer,
@@ -17,6 +17,8 @@ from .serializers import (
     CandidateNoteSerializer, CandidateActivityLogSerializer,
     UploadBatchSerializer, UploadBatchListSerializer,
     RecruiterAssignmentHistorySerializer, AppSettingSerializer,
+    FastGemUploadSerializer, FastGemUploadCreateSerializer,
+    BulkStatusUpdateSerializer, BulkReassignSerializer, BulkDeleteSerializer,
 )
 from .filters import CandidateFilter
 from .constants import (
@@ -42,7 +44,9 @@ class CandidateViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        qs = Candidate.objects.select_related('assigned_recruiter', 'assigned_trainer', 'created_by', 'updated_by')
+        qs = Candidate.objects.filter(is_deleted=False).select_related(
+            'assigned_recruiter', 'assigned_trainer', 'created_by', 'updated_by'
+        )
         user = self.request.user
         if user.role == 'recruiter':
             qs = qs.filter(assigned_recruiter=user)
@@ -465,6 +469,118 @@ class ActivityLogListView(generics.ListAPIView):
         if created_before:
             qs = qs.filter(created_at__date__lte=created_before)
         return qs
+
+
+class BulkOperationsView(generics.GenericAPIView):
+    permission_classes = [IsAdminOrSubadmin]
+
+    def post(self, request, action_type):
+        if action_type == 'update_status':
+            return self._bulk_update_status(request)
+        elif action_type == 'reassign':
+            return self._bulk_reassign(request)
+        elif action_type == 'delete':
+            return self._bulk_delete(request)
+        return Response({'detail': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def _bulk_update_status(self, request):
+        serializer = BulkStatusUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        candidate_ids = serializer.validated_data['candidate_ids']
+        new_status = serializer.validated_data['status']
+        remarks = serializer.validated_data.get('remarks', '')
+        is_admin_override = (
+            serializer.validated_data.get('is_admin_override', False)
+            and request.user.role in ('admin', 'subadmin')
+        )
+
+        results = []
+        candidates = Candidate.objects.filter(id__in=candidate_ids, is_deleted=False)
+        for candidate in candidates:
+            try:
+                StatusTransitionService.update_status(
+                    candidate=candidate,
+                    new_status=new_status,
+                    user=request.user,
+                    remarks=remarks,
+                    is_admin_override=is_admin_override,
+                )
+                results.append({'id': candidate.id, 'status': 'success'})
+            except StatusTransitionError as e:
+                results.append({'id': candidate.id, 'status': 'error', 'detail': str(e)})
+
+        return Response({'results': results})
+
+    def _bulk_reassign(self, request):
+        serializer = BulkReassignSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        candidate_ids = serializer.validated_data['candidate_ids']
+        recruiter_id = serializer.validated_data['recruiter_id']
+        remarks = serializer.validated_data.get('remarks', '')
+
+        from accounts.models import User
+        try:
+            recruiter = User.objects.get(id=recruiter_id, role='recruiter', is_active=True)
+        except User.DoesNotExist:
+            return Response({'detail': 'Recruiter not found or inactive.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        candidates = Candidate.objects.filter(id__in=candidate_ids, is_deleted=False)
+        count = 0
+        for candidate in candidates:
+            AssignmentService.reassign_candidate(candidate, recruiter, request.user, remarks=remarks)
+            count += 1
+
+        return Response({'reassigned': count})
+
+    def _bulk_delete(self, request):
+        serializer = BulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        candidate_ids = serializer.validated_data['candidate_ids']
+
+        count = Candidate.objects.filter(id__in=candidate_ids, is_deleted=False).update(is_deleted=True)
+        return Response({'deleted': count})
+
+
+class FastGemUploadViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminOrSubadmin]
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_queryset(self):
+        return FastGemUpload.objects.select_related('candidate', 'uploaded_by').all()
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return FastGemUploadCreateSerializer
+        return FastGemUploadSerializer
+
+    def perform_create(self, serializer):
+        candidate = serializer.validated_data['candidate']
+        from .constants import PIPELINE_HIRED, PIPELINE_FASTGEM_UPLOADED
+        if candidate.current_status != PIPELINE_HIRED:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'detail': 'Candidate must be in "hired" status for FastGem upload.'})
+
+        upload = serializer.save(uploaded_by=self.request.user, status='uploaded')
+        try:
+            StatusTransitionService.update_status(
+                candidate=candidate,
+                new_status=PIPELINE_FASTGEM_UPLOADED,
+                user=self.request.user,
+                remarks='FastGem data uploaded',
+                is_admin_override=True,
+            )
+        except StatusTransitionError:
+            upload.status = 'failed'
+            upload.error_message = 'Failed to transition candidate status.'
+            upload.save()
+
+    @action(detail=False, methods=['get'])
+    def eligible(self, request):
+        from .constants import PIPELINE_HIRED
+        candidates = Candidate.objects.filter(
+            current_status=PIPELINE_HIRED, is_deleted=False
+        ).select_related('assigned_recruiter')
+        return Response(CandidateListSerializer(candidates, many=True).data)
 
 
 class AppSettingViewSet(viewsets.ModelViewSet):

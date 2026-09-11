@@ -21,6 +21,7 @@ export default function UserManagementPage() {
   const [form, setForm] = useState({
     username: '', email: '', first_name: '', last_name: '',
     role: 'recruiter', phone: '', password: '', password_confirm: '',
+    daily_call_target: 0, daily_booking_target: 0,
   });
 
   const fetchUsers = async () => {
@@ -49,6 +50,7 @@ export default function UserManagementPage() {
       setForm({
         username: '', email: '', first_name: '', last_name: '',
         role: 'recruiter', phone: '', password: '', password_confirm: '',
+        daily_call_target: 0, daily_booking_target: 0,
       });
       fetchUsers();
     } catch (err) {
@@ -98,6 +100,8 @@ export default function UserManagementPage() {
     setEditForm({
       first_name: u.first_name || '', last_name: u.last_name || '',
       email: u.email || '', phone: u.phone || '', role: u.role,
+      daily_call_target: u.daily_call_target || 0,
+      daily_booking_target: u.daily_booking_target || 0,
     });
   };
 
@@ -188,6 +192,16 @@ export default function UserManagementPage() {
                   <input type="password" className="form-control form-control-sm" required
                     value={form.password_confirm} onChange={(e) => setForm({ ...form, password_confirm: e.target.value })} />
                 </div>
+                <div className="col-md-4">
+                  <label className="form-label">Daily Call Target</label>
+                  <input type="number" className="form-control form-control-sm" min="0"
+                    value={form.daily_call_target} onChange={(e) => setForm({ ...form, daily_call_target: parseInt(e.target.value) || 0 })} />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Daily Booking Target</label>
+                  <input type="number" className="form-control form-control-sm" min="0"
+                    value={form.daily_booking_target} onChange={(e) => setForm({ ...form, daily_booking_target: parseInt(e.target.value) || 0 })} />
+                </div>
               </div>
               <button type="submit" className="btn btn-primary btn-sm mt-3">Create User</button>
             </form>
@@ -231,6 +245,18 @@ export default function UserManagementPage() {
                   <option value="subadmin">Subadmin</option>
                   {isAdmin && <option value="admin">Admin</option>}
                 </select>
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Daily Call Target</label>
+                <input type="number" className="form-control form-control-sm" min="0"
+                  value={editForm.daily_call_target}
+                  onChange={(e) => setEditForm({...editForm, daily_call_target: parseInt(e.target.value) || 0})} />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Daily Booking Target</label>
+                <input type="number" className="form-control form-control-sm" min="0"
+                  value={editForm.daily_booking_target}
+                  onChange={(e) => setEditForm({...editForm, daily_booking_target: parseInt(e.target.value) || 0})} />
               </div>
               <div className="col-md-3 d-flex align-items-end">
                 <div className="d-flex gap-2">

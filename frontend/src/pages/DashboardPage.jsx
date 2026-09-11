@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { dashboardAPI } from '../services/api';
+import { dashboardAPI, reportsAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import { STATUS_LABELS, formatDateTime } from '../utils/statusHelpers';
@@ -145,6 +145,7 @@ export default function DashboardPage() {
   const [dateTo, setDateTo] = useState(formatDateInput(today));
   const [appliedFrom, setAppliedFrom] = useState(dateFrom);
   const [appliedTo, setAppliedTo] = useState(dateTo);
+  const [kpiData, setKpiData] = useState(null);
 
   const loadDashboard = useCallback(async (from, to) => {
     setLoading(true);
@@ -163,6 +164,19 @@ export default function DashboardPage() {
   }, [isAdminOrSubadmin]);
 
   useEffect(() => { loadDashboard(appliedFrom, appliedTo); }, [loadDashboard, appliedFrom, appliedTo]);
+
+  useEffect(() => {
+    reportsAPI.kpiAttainment()
+      .then(({ data: result }) => {
+        if (!isAdminOrSubadmin) {
+          const myKpi = result.find(r => r.recruiter_id === user?.id);
+          setKpiData(myKpi ? [myKpi] : []);
+        } else {
+          setKpiData(result);
+        }
+      })
+      .catch(() => {});
+  }, [user, isAdminOrSubadmin]);
 
   const handleApply = () => {
     setAppliedFrom(dateFrom);
@@ -427,6 +441,72 @@ export default function DashboardPage() {
                 <i className="bi bi-box-arrow-up-right" style={{ fontSize: '0.7rem' }}></i> Bookings
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* KPI Progress */}
+      {kpiData && kpiData.length > 0 && (
+        <div className="table-container mb-4">
+          <div className="p-3 border-bottom d-flex align-items-center gap-2">
+            <i className="bi bi-speedometer2" style={{ color: 'var(--primary)' }}></i>
+            <h6 className="mb-0">Today's KPI Progress</h6>
+          </div>
+          <div className="p-3">
+            {kpiData.map((kpi) => (
+              <div key={kpi.recruiter_id} className="mb-3">
+                {isAdminOrSubadmin && <div className="fw-medium mb-2">{kpi.recruiter_name}</div>}
+                <div className="row g-3">
+                  <div className="col-md-4">
+                    <div className="kpi-progress-item">
+                      <div className="d-flex justify-content-between mb-1">
+                        <small className="text-muted">Calls</small>
+                        <small className="fw-bold">{kpi.calls_today}/{kpi.call_target}</small>
+                      </div>
+                      <div className="kpi-progress-bar">
+                        <div className="kpi-progress-fill"
+                          style={{
+                            width: `${Math.min(kpi.call_attainment, 100)}%`,
+                            background: kpi.call_attainment >= 100 ? 'var(--success)' : kpi.call_attainment >= 50 ? 'var(--primary)' : 'var(--warning)',
+                          }} />
+                      </div>
+                      <small style={{ fontSize: '0.7rem' }} className="text-muted">{kpi.call_attainment}%</small>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="kpi-progress-item">
+                      <div className="d-flex justify-content-between mb-1">
+                        <small className="text-muted">Bookings</small>
+                        <small className="fw-bold">{kpi.bookings_today}/{kpi.booking_target}</small>
+                      </div>
+                      <div className="kpi-progress-bar">
+                        <div className="kpi-progress-fill"
+                          style={{
+                            width: `${Math.min(kpi.booking_attainment, 100)}%`,
+                            background: kpi.booking_attainment >= 100 ? 'var(--success)' : kpi.booking_attainment >= 50 ? 'var(--primary)' : 'var(--warning)',
+                          }} />
+                      </div>
+                      <small style={{ fontSize: '0.7rem' }} className="text-muted">{kpi.booking_attainment}%</small>
+                    </div>
+                  </div>
+                  <div className="col-md-4">
+                    <div className="kpi-progress-item">
+                      <div className="d-flex justify-content-between mb-1">
+                        <small className="text-muted">Status Changes</small>
+                        <small className="fw-bold">{kpi.status_changes_today}</small>
+                      </div>
+                      <div className="kpi-progress-bar">
+                        <div className="kpi-progress-fill"
+                          style={{
+                            width: `${Math.min(kpi.status_changes_today * 10, 100)}%`,
+                            background: 'var(--primary)',
+                          }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

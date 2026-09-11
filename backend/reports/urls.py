@@ -13,4 +13,8 @@ urlpatterns = [
     path('daily-trends/', views.DailyTrendsReportView.as_view(), name='daily-trends'),
     path('recruiter-productivity/', views.RecruiterProductivityReportView.as_view(), name='recruiter-productivity'),
     path('export-csv/', views.ExportCandidatesCSVView.as_view(), name='export-csv'),
+    path('kpi-attainment/', views.KPIAttainmentReportView.as_view(), name='kpi-attainment'),
+    path('booking-summary/', views.BookingSummaryReportView.as_view(), name='booking-summary'),
+    path('round2-summary/', views.Round2SummaryReportView.as_view(), name='round2-summary'),
+    path('recruiter-leaderboard/', views.RecruiterLeaderboardReportView.as_view(), name='recruiter-leaderboard'),
 ]
