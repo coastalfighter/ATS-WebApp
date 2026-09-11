@@ -14,12 +14,19 @@ export const STATUS_LABELS = {
   screening_completed: 'Screening Completed',
   interview_scheduled: 'Interview Scheduled',
   interview_completed: 'Interview Completed',
+  round2_scheduled: 'Round 2 Scheduled',
+  round2_completed: 'Round 2 Completed',
+  observation: 'Observation',
+  training: 'Training',
+  training_completed: 'Training Completed',
   submitted: 'Submitted',
   rejected: 'Rejected',
   selected: 'Selected',
   offer_released: 'Offer Released',
   joined: 'Joined',
   dropped: 'Dropped',
+  hired: 'Hired',
+  fastgem_uploaded: 'FastGem Uploaded',
 };
 
 export const BUCKET_LABELS = {

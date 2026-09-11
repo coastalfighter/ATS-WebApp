@@ -5,13 +5,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.permissions import IsAdminOrSubadmin
-from .models import Interview, EmailLog, ZoomAccount, Location, CallLog, InterviewSlot
+from .models import Interview, EmailLog, ZoomAccount, Location, CallLog, InterviewSlot, InterviewFeedback, ObservationSheet
 from .serializers import (
     InterviewSerializer, InterviewCreateSerializer,
     InterviewUpdateSerializer, EmailLogSerializer,
     ZoomAccountSerializer, ZoomAccountListSerializer,
     LocationSerializer, CallLogSerializer,
     InterviewSlotSerializer, InterviewSlotCreateSerializer,
+    InterviewFeedbackSerializer, InterviewFeedbackCreateSerializer,
+    ObservationSheetSerializer, ObservationSheetCreateSerializer,
 )
 from .services.zoom_service import ZoomService
 from .tasks import (
@@ -282,3 +284,53 @@ class InterviewSlotViewSet(viewsets.ModelViewSet):
         slot.save(update_fields=['booked_count'])
         slot.refresh_status()
         return Response(InterviewSlotSerializer(slot).data)
+
+
+class InterviewFeedbackViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_queryset(self):
+        qs = InterviewFeedback.objects.select_related(
+            'interview', 'interview__candidate', 'submitted_by'
+        ).all()
+        interview_id = self.request.query_params.get('interview')
+        if interview_id:
+            qs = qs.filter(interview_id=interview_id)
+        candidate_id = self.request.query_params.get('candidate')
+        if candidate_id:
+            qs = qs.filter(interview__candidate_id=candidate_id)
+        return qs
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return InterviewFeedbackCreateSerializer
+        return InterviewFeedbackSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(submitted_by=self.request.user)
+
+
+class ObservationSheetViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_queryset(self):
+        qs = ObservationSheet.objects.select_related(
+            'interview', 'interview__candidate', 'trainer'
+        ).all()
+        interview_id = self.request.query_params.get('interview')
+        if interview_id:
+            qs = qs.filter(interview_id=interview_id)
+        candidate_id = self.request.query_params.get('candidate')
+        if candidate_id:
+            qs = qs.filter(interview__candidate_id=candidate_id)
+        return qs
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ObservationSheetCreateSerializer
+        return ObservationSheetSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(trainer=self.request.user)

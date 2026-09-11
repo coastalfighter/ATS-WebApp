@@ -14,7 +14,10 @@ from .assignment import AssignmentService
 logger = logging.getLogger('ats')
 
 REQUIRED_COLUMNS = ['first_name', 'last_name', 'email', 'phone']
-OPTIONAL_COLUMNS = ['alternate_phone', 'source', 'residential_location', 'job_market']
+OPTIONAL_COLUMNS = [
+    'alternate_phone', 'source', 'residential_location', 'job_market',
+    'date_of_birth', 'experience_years', 'current_company', 'current_designation',
+]
 
 COLUMN_ALIASES = {
     'firstname': 'first_name',
@@ -34,6 +37,19 @@ COLUMN_ALIASES = {
     'job market': 'job_market',
     'market': 'job_market',
     'industry': 'job_market',
+    'dob': 'date_of_birth',
+    'date of birth': 'date_of_birth',
+    'birth date': 'date_of_birth',
+    'experience': 'experience_years',
+    'exp': 'experience_years',
+    'years of experience': 'experience_years',
+    'experience years': 'experience_years',
+    'company': 'current_company',
+    'current company': 'current_company',
+    'designation': 'current_designation',
+    'current designation': 'current_designation',
+    'title': 'current_designation',
+    'job title': 'current_designation',
 }
 
 

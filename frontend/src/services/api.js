@@ -88,6 +88,7 @@ export const candidatesAPI = {
   getActivity: (id) => api.get(`/candidates/${id}/activity/`),
   getAssignmentHistory: (id) => api.get(`/candidates/${id}/assignment_history/`),
   setFollowUp: (id, data) => api.post(`/candidates/${id}/set_follow_up/`, data),
+  assignTrainer: (id, data) => api.post(`/candidates/${id}/assign_trainer/`, data),
   statusOptions: (params) => api.get('/candidates/status_options/', { params }),
   activityLog: (params) => api.get('/candidates/activity-log/', { params }),
   upload: (formData) => api.post('/candidates/upload/', formData, {
@@ -111,6 +112,18 @@ export const interviewsAPI = {
   cancel: (id) => api.post(`/interviews/${id}/cancel/`),
   sendReminder: (id) => api.post(`/interviews/${id}/send_reminder/`),
   emailLogs: (params) => api.get('/interviews/emails/', { params }),
+};
+
+export const feedbackAPI = {
+  list: (params) => api.get('/interviews/feedback/', { params }),
+  get: (id) => api.get(`/interviews/feedback/${id}/`),
+  create: (data) => api.post('/interviews/feedback/', data),
+};
+
+export const observationsAPI = {
+  list: (params) => api.get('/interviews/observations/', { params }),
+  get: (id) => api.get(`/interviews/observations/${id}/`),
+  create: (data) => api.post('/interviews/observations/', data),
 };
 
 export const zoomRoomsAPI = {

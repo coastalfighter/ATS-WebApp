@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { candidatesAPI, interviewsAPI, usersAPI, bookingsAPI } from '../services/api';
+import { candidatesAPI, interviewsAPI, usersAPI, bookingsAPI, feedbackAPI, observationsAPI } from '../services/api';
 import BookCandidateModal from '../components/bookings/BookCandidateModal';
+import FeedbackForm from '../components/interviews/FeedbackForm';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import { STATUS_LABELS, BUCKET_LABELS, getStatusBadgeClass, formatDate, formatDateTime } from '../utils/statusHelpers';
@@ -55,6 +56,33 @@ const LIFECYCLE_ACTIONS = {
     { status: 'dropped', label: 'Dropped', icon: 'bi-dash-circle', color: 'secondary' },
   ],
   interview_completed: [
+    { status: 'round2_scheduled', label: 'Schedule Round 2', icon: 'bi-calendar-plus', color: 'info' },
+    { status: 'submitted', label: 'Submit Candidate', icon: 'bi-send-fill', color: 'primary' },
+    { status: 'rejected', label: 'Reject', icon: 'bi-x-lg', color: 'danger' },
+    { status: 'dropped', label: 'Dropped', icon: 'bi-dash-circle', color: 'secondary' },
+  ],
+  round2_scheduled: [
+    { status: 'round2_completed', label: 'Round 2 Done', icon: 'bi-check-circle-fill', color: 'success' },
+    { status: 'rejected', label: 'Reject', icon: 'bi-x-lg', color: 'danger' },
+    { status: 'dropped', label: 'Dropped', icon: 'bi-dash-circle', color: 'secondary' },
+  ],
+  round2_completed: [
+    { status: 'observation', label: 'Start Observation', icon: 'bi-clipboard-check', color: 'primary' },
+    { status: 'submitted', label: 'Submit Candidate', icon: 'bi-send-fill', color: 'info' },
+    { status: 'rejected', label: 'Reject', icon: 'bi-x-lg', color: 'danger' },
+    { status: 'dropped', label: 'Dropped', icon: 'bi-dash-circle', color: 'secondary' },
+  ],
+  observation: [
+    { status: 'training', label: 'Start Training', icon: 'bi-mortarboard-fill', color: 'primary' },
+    { status: 'rejected', label: 'Reject', icon: 'bi-x-lg', color: 'danger' },
+    { status: 'dropped', label: 'Dropped', icon: 'bi-dash-circle', color: 'secondary' },
+  ],
+  training: [
+    { status: 'training_completed', label: 'Training Done', icon: 'bi-check-circle-fill', color: 'success' },
+    { status: 'rejected', label: 'Reject', icon: 'bi-x-lg', color: 'danger' },
+    { status: 'dropped', label: 'Dropped', icon: 'bi-dash-circle', color: 'secondary' },
+  ],
+  training_completed: [
     { status: 'submitted', label: 'Submit Candidate', icon: 'bi-send-fill', color: 'primary' },
     { status: 'rejected', label: 'Reject', icon: 'bi-x-lg', color: 'danger' },
     { status: 'dropped', label: 'Dropped', icon: 'bi-dash-circle', color: 'secondary' },
@@ -73,12 +101,20 @@ const LIFECYCLE_ACTIONS = {
     { status: 'joined', label: 'Mark Joined', icon: 'bi-person-check-fill', color: 'success' },
     { status: 'dropped', label: 'Dropped', icon: 'bi-dash-circle', color: 'secondary' },
   ],
+  joined: [
+    { status: 'hired', label: 'Mark Hired', icon: 'bi-award-fill', color: 'success' },
+  ],
+  hired: [
+    { status: 'fastgem_uploaded', label: 'FastGem Uploaded', icon: 'bi-cloud-arrow-up-fill', color: 'primary' },
+  ],
 };
 
 const PIPELINE_STEPS = [
   'interested', 'screening_scheduled', 'screening_completed',
-  'interview_scheduled', 'interview_completed', 'submitted',
-  'selected', 'offer_released', 'joined',
+  'interview_scheduled', 'interview_completed',
+  'round2_scheduled', 'round2_completed',
+  'observation', 'training', 'training_completed',
+  'submitted', 'selected', 'offer_released', 'joined', 'hired',
 ];
 
 function LifecycleProgress({ currentStatus }) {
@@ -129,6 +165,17 @@ export default function CandidateDetailPage() {
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [showBookModal, setShowBookModal] = useState(false);
 
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [feedbacksLoading, setFeedbacksLoading] = useState(false);
+  const [observations, setObservations] = useState([]);
+  const [observationsLoading, setObservationsLoading] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [feedbackInterview, setFeedbackInterview] = useState(null);
+  const [showTrainerModal, setShowTrainerModal] = useState(false);
+  const [trainerList, setTrainerList] = useState([]);
+  const [selectedTrainer, setSelectedTrainer] = useState('');
+  const [trainerSubmitting, setTrainerSubmitting] = useState(false);
+
   useEffect(() => { loadCandidate(); }, [id]);
 
   useEffect(() => {
@@ -137,6 +184,8 @@ export default function CandidateDetailPage() {
       loadActivity();
       loadInterviews();
       loadBookings();
+      loadFeedbacks();
+      loadObservations();
     }
   }, [candidate?.id]);
 
@@ -194,6 +243,48 @@ export default function CandidateDetailPage() {
       setBookings(data.results || data);
     } catch {}
     finally { setBookingsLoading(false); }
+  };
+
+  const loadFeedbacks = async () => {
+    setFeedbacksLoading(true);
+    try {
+      const { data } = await feedbackAPI.list({ candidate: id });
+      setFeedbacks(data.results || data);
+    } catch {}
+    finally { setFeedbacksLoading(false); }
+  };
+
+  const loadObservations = async () => {
+    setObservationsLoading(true);
+    try {
+      const { data } = await observationsAPI.list({ candidate: id });
+      setObservations(data.results || data);
+    } catch {}
+    finally { setObservationsLoading(false); }
+  };
+
+  const openTrainerModal = async () => {
+    setShowTrainerModal(true);
+    try {
+      const { data } = await usersAPI.getRecruiters({ active_only: true });
+      setTrainerList(data);
+    } catch {}
+  };
+
+  const handleAssignTrainer = async () => {
+    if (!selectedTrainer) return;
+    setTrainerSubmitting(true);
+    try {
+      await candidatesAPI.assignTrainer(candidate.id, { trainer_id: parseInt(selectedTrainer) });
+      await loadCandidate();
+      setShowTrainerModal(false);
+      setSelectedTrainer('');
+      setSuccess('Trainer assigned successfully.');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to assign trainer.');
+    } finally {
+      setTrainerSubmitting(false);
+    }
   };
 
   const handleConfirmBooking = async (bookingId) => {
@@ -312,7 +403,14 @@ export default function CandidateDetailPage() {
           <button className="btn btn-link text-muted p-0 mb-1 d-flex align-items-center gap-1" style={{fontSize:'0.8rem',textDecoration:'none'}} onClick={() => navigate(-1)}>
             <i className="bi bi-arrow-left"></i> Back to list
           </button>
-          <h4 className="mb-1">{candidate.first_name} {candidate.last_name}</h4>
+          <div className="d-flex align-items-center gap-2">
+            <h4 className="mb-1">{candidate.first_name} {candidate.last_name}</h4>
+            {['observation', 'training', 'round2_completed'].includes(candidate.current_status) && (
+              <button className="btn btn-outline-info btn-sm d-flex align-items-center gap-1" onClick={openTrainerModal}>
+                <i className="bi bi-person-plus"></i> Assign Trainer
+              </button>
+            )}
+          </div>
           <div className="d-flex gap-2 align-items-center flex-wrap">
             <span className="badge bg-secondary">{BUCKET_LABELS[candidate.current_bucket]}</span>
             <span className={getStatusBadgeClass(candidate.current_status)}>
@@ -448,6 +546,32 @@ export default function CandidateDetailPage() {
                     </div>
                   </div>
                 </div>
+                <div className="row mt-2">
+                  <div className="col-md-6">
+                    <div className="detail-field">
+                      <div className="detail-label">Date of Birth</div>
+                      <div className="detail-value">{candidate.date_of_birth ? formatDate(candidate.date_of_birth) : '-'}</div>
+                    </div>
+                    <div className="detail-field">
+                      <div className="detail-label">Experience</div>
+                      <div className="detail-value">{candidate.experience_years != null ? `${candidate.experience_years} years` : '-'}</div>
+                    </div>
+                    <div className="detail-field">
+                      <div className="detail-label">Trainer</div>
+                      <div className="detail-value">{candidate.assigned_trainer_name || '-'}</div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="detail-field">
+                      <div className="detail-label">Company</div>
+                      <div className="detail-value">{candidate.current_company || '-'}</div>
+                    </div>
+                    <div className="detail-field">
+                      <div className="detail-label">Designation</div>
+                      <div className="detail-value">{candidate.current_designation || '-'}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -541,10 +665,10 @@ export default function CandidateDetailPage() {
               </div>
             )}
             <table className="table table-sm mb-0">
-              <thead><tr><th>Type</th><th>Interviewer</th><th>Scheduled</th><th>Duration</th><th>Status</th><th>Zoom</th></tr></thead>
+              <thead><tr><th>Type</th><th>Interviewer</th><th>Scheduled</th><th>Duration</th><th>Status</th><th>Zoom</th><th>Feedback</th></tr></thead>
               <tbody>
                 {(Array.isArray(interviews) ? interviews : []).length === 0 ? (
-                  <tr><td colSpan="6" className="text-center text-muted py-3">No interviews scheduled.</td></tr>
+                  <tr><td colSpan="7" className="text-center text-muted py-3">No interviews scheduled.</td></tr>
                 ) : (Array.isArray(interviews) ? interviews : []).map((iv) => (
                   <tr key={iv.id}>
                     <td className="text-capitalize"><small>{iv.interview_type}</small></td>
@@ -553,10 +677,116 @@ export default function CandidateDetailPage() {
                     <td><small>{iv.duration_minutes}m</small></td>
                     <td><span className={`badge bg-${iv.status === 'scheduled' ? 'primary' : iv.status === 'completed' ? 'success' : 'danger'}`}>{iv.status}</span></td>
                     <td>{iv.zoom_join_url ? <a href={iv.zoom_join_url} target="_blank" rel="noreferrer" className="btn btn-outline-primary btn-sm" style={{fontSize:'0.7rem',padding:'2px 6px'}}><i className="bi bi-camera-video"></i></a> : '-'}</td>
+                    <td>
+                      <button className="btn btn-outline-warning btn-sm" style={{fontSize:'0.7rem',padding:'2px 6px'}}
+                        onClick={() => { setFeedbackInterview(iv); setShowFeedbackForm(true); }}
+                        title="Give Feedback">
+                        <i className="bi bi-star"></i>
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Interview Feedback Section */}
+          <div className="table-container mb-3">
+            <div className="p-3 border-bottom d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center gap-2">
+                <i className="bi bi-star-fill" style={{color:'var(--primary)'}}></i>
+                <h6 className="mb-0">Interview Feedback</h6>
+              </div>
+            </div>
+            {feedbacksLoading ? (
+              <div className="p-3 text-center text-muted small">Loading feedback...</div>
+            ) : (
+              <table className="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Interview</th><th>Round</th><th>Rating</th><th>Strengths</th>
+                    <th>Weaknesses</th><th>Recommendation</th><th>Submitted By</th><th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(Array.isArray(feedbacks) ? feedbacks : []).length === 0 ? (
+                    <tr><td colSpan="8" className="text-center text-muted py-3">No feedback submitted yet.</td></tr>
+                  ) : (Array.isArray(feedbacks) ? feedbacks : []).map((fb) => (
+                    <tr key={fb.id}>
+                      <td><small>{fb.interview_type || fb.interview_detail?.interview_type || '-'}</small></td>
+                      <td><small className="text-capitalize">{fb.round || '-'}</small></td>
+                      <td>
+                        <small>
+                          {fb.rating ? [...Array(5)].map((_, i) => (
+                            <i key={i} className={`bi bi-star${i < fb.rating ? '-fill' : ''}`} style={{color: i < fb.rating ? '#f5a623' : '#ccc', fontSize: '0.75rem'}}></i>
+                          )) : '-'}
+                        </small>
+                      </td>
+                      <td><small>{fb.strengths || '-'}</small></td>
+                      <td><small>{fb.weaknesses || '-'}</small></td>
+                      <td>
+                        <span className={`badge bg-${
+                          fb.recommendation === 'hire' ? 'success' :
+                          fb.recommendation === 'reject' ? 'danger' :
+                          fb.recommendation === 'next_round' ? 'info' :
+                          fb.recommendation === 'hold' ? 'warning' : 'secondary'
+                        }`}>
+                          {fb.recommendation ? fb.recommendation.replace(/_/g, ' ') : '-'}
+                        </span>
+                      </td>
+                      <td><small>{fb.submitted_by_name || fb.submitted_by_detail?.full_name || '-'}</small></td>
+                      <td><small style={{fontFamily:'monospace'}}>{formatDate(fb.created_at)}</small></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Observation Sheets Section */}
+          <div className="table-container mb-3">
+            <div className="p-3 border-bottom d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center gap-2">
+                <i className="bi bi-clipboard-data-fill" style={{color:'var(--primary)'}}></i>
+                <h6 className="mb-0">Observation Sheets</h6>
+              </div>
+            </div>
+            {observationsLoading ? (
+              <div className="p-3 text-center text-muted small">Loading observations...</div>
+            ) : (
+              <table className="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Date</th><th>Performance</th><th>Communication</th><th>Technical</th>
+                    <th>Avg Score</th><th>Recommendation</th><th>Trainer</th><th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(Array.isArray(observations) ? observations : []).length === 0 ? (
+                    <tr><td colSpan="8" className="text-center text-muted py-3">No observations recorded yet.</td></tr>
+                  ) : (Array.isArray(observations) ? observations : []).map((obs) => (
+                    <tr key={obs.id}>
+                      <td><small style={{fontFamily:'monospace'}}>{formatDate(obs.date || obs.created_at)}</small></td>
+                      <td><small>{obs.performance_score != null ? obs.performance_score : '-'}</small></td>
+                      <td><small>{obs.communication_score != null ? obs.communication_score : '-'}</small></td>
+                      <td><small>{obs.technical_score != null ? obs.technical_score : '-'}</small></td>
+                      <td><small>{obs.average_score != null ? obs.average_score : '-'}</small></td>
+                      <td>
+                        <span className={`badge bg-${
+                          obs.recommendation === 'proceed' ? 'success' :
+                          obs.recommendation === 'extend_training' ? 'warning' :
+                          obs.recommendation === 'reject' ? 'danger' : 'secondary'
+                        }`}>
+                          {obs.recommendation ? obs.recommendation.replace(/_/g, ' ') : '-'}
+                        </span>
+                      </td>
+                      <td><small>{obs.trainer_name || obs.trainer_detail?.full_name || '-'}</small></td>
+                      <td><small>{obs.notes || '-'}</small></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Bookings Section */}
@@ -751,6 +981,49 @@ export default function CandidateDetailPage() {
         candidate={candidate}
         onBooked={loadBookings}
       />
+
+      <FeedbackForm
+        show={showFeedbackForm}
+        onClose={() => { setShowFeedbackForm(false); setFeedbackInterview(null); }}
+        interviewId={feedbackInterview?.id}
+        round={feedbackInterview?.round}
+        onSubmitted={loadFeedbacks}
+      />
+
+      {/* Trainer Assignment Modal */}
+      {showTrainerModal && (
+        <div className="modal d-block" tabIndex="-1" style={{backgroundColor:'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h6 className="modal-title d-flex align-items-center gap-2">
+                  <i className="bi bi-person-plus"></i> Assign Trainer
+                </h6>
+                <button type="button" className="btn-close" onClick={() => { setShowTrainerModal(false); setSelectedTrainer(''); }}></button>
+              </div>
+              <div className="modal-body">
+                <label className="form-label">Select Trainer</label>
+                <select className="form-select" value={selectedTrainer}
+                  onChange={(e) => setSelectedTrainer(e.target.value)}>
+                  <option value="">-- Select a trainer --</option>
+                  {trainerList.map((t) => (
+                    <option key={t.id} value={t.id}>{t.full_name || `${t.first_name} ${t.last_name}`}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary btn-sm" onClick={() => { setShowTrainerModal(false); setSelectedTrainer(''); }}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={handleAssignTrainer}
+                  disabled={!selectedTrainer || trainerSubmitting}>
+                  {trainerSubmitting ? 'Assigning...' : 'Assign Trainer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -28,6 +28,7 @@ import HeatMapPage from './pages/HeatMapPage';
 import CallLogsPage from './pages/CallLogsPage';
 import ManageSlotsPage from './pages/ManageSlotsPage';
 import BookingsListPage from './pages/BookingsListPage';
+import ObservationPage from './pages/ObservationPage';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -57,6 +58,7 @@ function AppRoutes() {
         <Route path="/interviews" element={<InterviewsPage />} />
         <Route path="/interview-slots" element={<ManageSlotsPage />} />
         <Route path="/bookings" element={<BookingsListPage />} />
+        <Route path="/observations" element={<ObservationPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/heatmap" element={<HeatMapPage />} />
         <Route path="/call-logs" element={<CallLogsPage />} />

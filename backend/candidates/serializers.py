@@ -9,6 +9,7 @@ from accounts.serializers import UserSerializer
 class CandidateListSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='full_name', read_only=True)
     assigned_recruiter_name = serializers.SerializerMethodField()
+    assigned_trainer_name = serializers.SerializerMethodField()
     call_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
@@ -18,6 +19,8 @@ class CandidateListSerializer(serializers.ModelSerializer):
             'alternate_phone', 'source', 'residential_location', 'job_market',
             'current_bucket', 'current_status',
             'assigned_recruiter', 'assigned_recruiter_name',
+            'assigned_trainer', 'assigned_trainer_name',
+            'date_of_birth', 'experience_years', 'current_company', 'current_designation',
             'follow_up_date', 'notes', 'created_at', 'updated_at',
             'call_count',
         ]
@@ -27,10 +30,16 @@ class CandidateListSerializer(serializers.ModelSerializer):
             return obj.assigned_recruiter.get_full_name()
         return None
 
+    def get_assigned_trainer_name(self, obj):
+        if obj.assigned_trainer:
+            return obj.assigned_trainer.get_full_name()
+        return None
+
 
 class CandidateDetailSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='full_name', read_only=True)
     assigned_recruiter_detail = UserSerializer(source='assigned_recruiter', read_only=True)
+    assigned_trainer_name = serializers.SerializerMethodField()
     created_by_name = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
 
@@ -41,6 +50,8 @@ class CandidateDetailSerializer(serializers.ModelSerializer):
             'alternate_phone', 'source', 'residential_location', 'job_market',
             'current_bucket', 'current_status',
             'assigned_recruiter', 'assigned_recruiter_detail',
+            'assigned_trainer', 'assigned_trainer_name',
+            'date_of_birth', 'experience_years', 'current_company', 'current_designation',
             'upload_batch', 'notes', 'follow_up_date',
             'created_at', 'updated_at', 'created_by', 'created_by_name',
             'updated_by', 'updated_by_name',
@@ -53,6 +64,9 @@ class CandidateDetailSerializer(serializers.ModelSerializer):
     def get_created_by_name(self, obj):
         return obj.created_by.get_full_name() if obj.created_by else None
 
+    def get_assigned_trainer_name(self, obj):
+        return obj.assigned_trainer.get_full_name() if obj.assigned_trainer else None
+
     def get_updated_by_name(self, obj):
         return obj.updated_by.get_full_name() if obj.updated_by else None
 
@@ -64,6 +78,7 @@ class CandidateCreateSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'email', 'phone',
             'alternate_phone', 'source', 'residential_location',
             'job_market', 'notes', 'assigned_recruiter',
+            'date_of_birth', 'experience_years', 'current_company', 'current_designation',
         ]
         extra_kwargs = {
             'assigned_recruiter': {'required': False, 'allow_null': True},
@@ -77,6 +92,7 @@ class CandidateUpdateSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'email', 'phone',
             'alternate_phone', 'source', 'residential_location',
             'job_market', 'notes', 'follow_up_date',
+            'date_of_birth', 'experience_years', 'current_company', 'current_designation',
         ]
 
 

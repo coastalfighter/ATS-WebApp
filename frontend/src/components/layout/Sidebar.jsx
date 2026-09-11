@@ -69,6 +69,9 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
           <NavLink to="/heatmap" className={linkClass} onClick={onClose} title="HeatMap">
             <i className="bi bi-geo-alt-fill"></i> <span>HeatMap</span>
           </NavLink>
+          <NavLink to="/observations" className={linkClass} onClick={onClose} title="Observations">
+            <i className="bi bi-clipboard-check-fill"></i> <span>Observations</span>
+          </NavLink>
           <NavLink to="/call-logs" className={linkClass} onClick={onClose} title="Call Logs">
             <i className="bi bi-telephone-fill"></i> <span>Call Logs</span>
           </NavLink>

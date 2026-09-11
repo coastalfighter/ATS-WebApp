@@ -410,12 +410,19 @@ body {
 .status-badge.screening_completed { background-color: #dbeafe; color: #1d4ed8; }
 .status-badge.interview_scheduled { background-color: #e0f2fe; color: #0369a1; }
 .status-badge.interview_completed { background-color: #dbeafe; color: #1d4ed8; }
+.status-badge.round2_scheduled { background-color: #fef3c7; color: #92400e; }
+.status-badge.round2_completed { background-color: #fde68a; color: #78350f; }
+.status-badge.observation { background-color: #e0e7ff; color: #3730a3; }
+.status-badge.training { background-color: #fce7f3; color: #9d174d; }
+.status-badge.training_completed { background-color: #fbcfe8; color: #831843; }
 .status-badge.submitted { background-color: #ede9fe; color: #6d28d9; }
 .status-badge.rejected { background-color: #fee2e2; color: #b91c1c; }
 .status-badge.selected { background-color: #d1fae5; color: #065f46; }
 .status-badge.offer_released { background-color: #d1fae5; color: #065f46; }
 .status-badge.joined { background: linear-gradient(135deg, #059669, #10b981); color: #fff; }
 .status-badge.dropped { background-color: #fee2e2; color: #b91c1c; }
+.status-badge.hired { background: linear-gradient(135deg, #0891b2, #06b6d4); color: #fff; }
+.status-badge.fastgem_uploaded { background: linear-gradient(135deg, #7c3aed, #8b5cf6); color: #fff; }
 
 /* ===== LOGIN PAGE ===== */
 .login-page {

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Interview, EmailLog, ZoomAccount, Location, CallLog, InterviewSlot
+from .models import Interview, EmailLog, ZoomAccount, Location, CallLog, InterviewSlot, InterviewFeedback, ObservationSheet
 from candidates.serializers import CandidateListSerializer
 
 
@@ -173,3 +173,71 @@ class CallLogSerializer(serializers.ModelSerializer):
 
     def get_initiated_by_name(self, obj):
         return obj.initiated_by.get_full_name() if obj.initiated_by else None
+
+
+class InterviewFeedbackSerializer(serializers.ModelSerializer):
+    submitted_by_name = serializers.SerializerMethodField()
+    candidate_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InterviewFeedback
+        fields = [
+            'id', 'interview', 'submitted_by', 'submitted_by_name',
+            'round', 'rating', 'strengths', 'weaknesses',
+            'recommendation', 'candidate_name', 'created_at',
+        ]
+        read_only_fields = ['id', 'submitted_by', 'created_at']
+
+    def get_submitted_by_name(self, obj):
+        return obj.submitted_by.get_full_name() if obj.submitted_by else None
+
+    def get_candidate_name(self, obj):
+        return obj.interview.candidate.full_name if obj.interview else None
+
+
+class InterviewFeedbackCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InterviewFeedback
+        fields = ['interview', 'round', 'rating', 'strengths', 'weaknesses', 'recommendation']
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError('Rating must be between 1 and 5.')
+        return value
+
+
+class ObservationSheetSerializer(serializers.ModelSerializer):
+    trainer_name = serializers.SerializerMethodField()
+    candidate_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ObservationSheet
+        fields = [
+            'id', 'interview', 'trainer', 'trainer_name',
+            'observation_date', 'performance_score', 'communication_score',
+            'technical_score', 'notes', 'recommendation',
+            'candidate_name', 'created_at',
+        ]
+        read_only_fields = ['id', 'trainer', 'created_at']
+
+    def get_trainer_name(self, obj):
+        return obj.trainer.get_full_name() if obj.trainer else None
+
+    def get_candidate_name(self, obj):
+        return obj.interview.candidate.full_name if obj.interview else None
+
+
+class ObservationSheetCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ObservationSheet
+        fields = [
+            'interview', 'observation_date', 'performance_score',
+            'communication_score', 'technical_score', 'notes', 'recommendation',
+        ]
+
+    def validate(self, data):
+        for field in ('performance_score', 'communication_score', 'technical_score'):
+            val = data.get(field, 5)
+            if val < 1 or val > 10:
+                raise serializers.ValidationError({field: 'Score must be between 1 and 10.'})
+        return data

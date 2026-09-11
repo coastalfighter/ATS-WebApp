@@ -29,8 +29,11 @@ const SORT_OPTIONS = [
 
 const pipelineStatuses = [
   'interested', 'screening_scheduled', 'screening_completed',
-  'interview_scheduled', 'interview_completed', 'submitted',
-  'rejected', 'selected', 'offer_released', 'joined', 'dropped',
+  'interview_scheduled', 'interview_completed',
+  'round2_scheduled', 'round2_completed',
+  'observation', 'training', 'training_completed',
+  'submitted', 'rejected', 'selected', 'offer_released',
+  'joined', 'dropped', 'hired', 'fastgem_uploaded',
 ];
 
 export default function PipelineCandidatesPage() {
@@ -52,7 +55,8 @@ export default function PipelineCandidatesPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [summary, setSummary] = useState({
     total: 0, screening: 0, interview_scheduled: 0, interview_completed: 0,
-    submitted: 0, selected: 0, joined: 0, rejected: 0,
+    round2: 0, observation: 0, training: 0,
+    submitted: 0, selected: 0, joined: 0, hired: 0, rejected: 0,
   });
 
   const totalPages = Math.ceil(count / rowsPerPage);
@@ -139,9 +143,13 @@ export default function PipelineCandidatesPage() {
     { label: 'SCREENING', value: summary.screening, key: '_screening' },
     { label: 'INTERVIEW SCHED.', value: summary.interview_scheduled, key: 'interview_scheduled' },
     { label: 'INTERVIEW DONE', value: summary.interview_completed, key: 'interview_completed' },
+    { label: 'ROUND 2', value: summary.round2, key: '_round2' },
+    { label: 'OBSERVATION', value: summary.observation, key: 'observation' },
+    { label: 'TRAINING', value: summary.training, key: '_training' },
     { label: 'SUBMITTED', value: summary.submitted, key: 'submitted' },
     { label: 'SELECTED', value: summary.selected, key: 'selected' },
     { label: 'JOINED', value: summary.joined, key: 'joined' },
+    { label: 'HIRED', value: summary.hired, key: '_hired' },
     { label: 'REJECTED', value: summary.rejected, key: '_rejected' },
   ];
 
@@ -150,6 +158,12 @@ export default function PipelineCandidatesPage() {
       setStatusFilter('');
     } else if (card.key === '_screening') {
       setStatusFilter('screening_scheduled');
+    } else if (card.key === '_round2') {
+      setStatusFilter('round2_scheduled');
+    } else if (card.key === '_training') {
+      setStatusFilter('training');
+    } else if (card.key === '_hired') {
+      setStatusFilter('hired');
     } else if (card.key === '_rejected') {
       setStatusFilter('rejected');
     } else {
@@ -339,6 +353,10 @@ export default function PipelineCandidatesPage() {
                       <div className="fl-info-box">
                         <span className="fl-info-label">ALT. PHONE</span>
                         <span className="fl-info-value">{c.alternate_phone || '-'}</span>
+                      </div>
+                      <div className="fl-info-box">
+                        <span className="fl-info-label">TRAINER</span>
+                        <span className="fl-info-value">{c.assigned_trainer_name || 'Unassigned'}</span>
                       </div>
                       <div className="fl-info-box">
                         <span className="fl-info-label">FOLLOW-UP</span>

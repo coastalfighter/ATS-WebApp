@@ -65,6 +65,14 @@ class Candidate(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='assigned_candidates'
     )
+    assigned_trainer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='trained_candidates'
+    )
+    date_of_birth = models.DateField(null=True, blank=True)
+    experience_years = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
+    current_company = models.CharField(max_length=200, blank=True)
+    current_designation = models.CharField(max_length=200, blank=True)
     upload_batch = models.ForeignKey(
         UploadBatch, on_delete=models.SET_NULL, null=True, blank=True, related_name='candidates'
     )

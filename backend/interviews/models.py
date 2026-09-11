@@ -184,6 +184,66 @@ class InterviewSlot(models.Model):
         self.save(update_fields=['status'])
 
 
+class InterviewFeedback(models.Model):
+    class Recommendation(models.TextChoices):
+        HIRE = 'hire', 'Hire'
+        REJECT = 'reject', 'Reject'
+        NEXT_ROUND = 'next_round', 'Next Round'
+        HOLD = 'hold', 'Hold'
+
+    interview = models.ForeignKey(
+        Interview, on_delete=models.CASCADE, related_name='feedbacks'
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='submitted_feedbacks'
+    )
+    round = models.CharField(
+        max_length=10, choices=Interview.RoundChoice.choices, default=Interview.RoundChoice.ROUND_1
+    )
+    rating = models.IntegerField(default=3)
+    strengths = models.TextField(blank=True)
+    weaknesses = models.TextField(blank=True)
+    recommendation = models.CharField(
+        max_length=20, choices=Recommendation.choices, default=Recommendation.HOLD
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Feedback for {self.interview} by {self.submitted_by} ({self.recommendation})"
+
+
+class ObservationSheet(models.Model):
+    class Recommendation(models.TextChoices):
+        PROCEED = 'proceed', 'Proceed'
+        EXTEND_TRAINING = 'extend_training', 'Extend Training'
+        REJECT = 'reject', 'Reject'
+
+    interview = models.ForeignKey(
+        Interview, on_delete=models.CASCADE, related_name='observation_sheets'
+    )
+    trainer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='observation_sheets'
+    )
+    observation_date = models.DateField()
+    performance_score = models.IntegerField(default=5)
+    communication_score = models.IntegerField(default=5)
+    technical_score = models.IntegerField(default=5)
+    notes = models.TextField(blank=True)
+    recommendation = models.CharField(
+        max_length=20, choices=Recommendation.choices, default=Recommendation.PROCEED
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Observation for {self.interview} by {self.trainer} ({self.recommendation})"
+
+
 class CallLog(models.Model):
     class Provider(models.TextChoices):
         RINGCENTRAL = 'ringcentral', 'RingCentral'

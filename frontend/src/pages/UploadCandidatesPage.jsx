@@ -7,6 +7,7 @@ const INITIAL_FORM = {
   first_name: '', last_name: '', email: '', phone: '',
   source: '', assigned_recruiter: '', residential_location: '',
   job_market: '', notes: '',
+  date_of_birth: '', experience_years: '', current_company: '', current_designation: '',
 };
 
 export default function UploadCandidatesPage() {
@@ -297,7 +298,7 @@ export default function UploadCandidatesPage() {
                       <div className="instruction-number">3</div>
                       <div>
                         <div className="fw-medium" style={{fontSize:'0.85rem'}}>Optional columns</div>
-                        <small className="text-muted">alternate_phone, source, residential_location, job_market</small>
+                        <small className="text-muted">alternate_phone, source, residential_location, job_market, date_of_birth, experience_years, current_company, current_designation</small>
                       </div>
                     </div>
                     <div className="instruction-item">
@@ -451,6 +452,29 @@ export default function UploadCandidatesPage() {
                     <input type="text" className="form-control form-control-sm" name="job_market"
                       placeholder="e.g. IT, Healthcare, Finance..."
                       value={form.job_market} onChange={handleFormChange} />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label form-label-sm">Date of Birth</label>
+                    <input type="date" className="form-control form-control-sm" name="date_of_birth"
+                      value={form.date_of_birth} onChange={handleFormChange} />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label form-label-sm">Experience (years)</label>
+                    <input type="number" className="form-control form-control-sm" name="experience_years"
+                      step="0.5" min="0" placeholder="e.g. 3.5"
+                      value={form.experience_years} onChange={handleFormChange} />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label form-label-sm">Current Company</label>
+                    <input type="text" className="form-control form-control-sm" name="current_company"
+                      placeholder="e.g. TCS, Infosys..."
+                      value={form.current_company} onChange={handleFormChange} />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label form-label-sm">Current Designation</label>
+                    <input type="text" className="form-control form-control-sm" name="current_designation"
+                      placeholder="e.g. Software Engineer, Team Lead..."
+                      value={form.current_designation} onChange={handleFormChange} />
                   </div>
                   <div className="col-12">
                     <label className="form-label form-label-sm">Notes</label>

@@ -24,6 +24,7 @@ from .constants import (
     PIPELINE_STATUS_CHOICES, VALID_PIPELINE_TRANSITIONS,
     ACTION_CANDIDATE_CREATED, ACTION_NOTES_UPDATED,
     ACTION_FOLLOW_UP_UPDATED, ACTION_CANDIDATE_EDITED,
+    ACTION_TRAINER_ASSIGNED,
 )
 from .services.status_transition import StatusTransitionService, StatusTransitionError
 from .services.assignment import AssignmentService
@@ -41,7 +42,7 @@ class CandidateViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        qs = Candidate.objects.select_related('assigned_recruiter', 'created_by', 'updated_by')
+        qs = Candidate.objects.select_related('assigned_recruiter', 'assigned_trainer', 'created_by', 'updated_by')
         user = self.request.user
         if user.role == 'recruiter':
             qs = qs.filter(assigned_recruiter=user)
@@ -195,6 +196,36 @@ class CandidateViewSet(viewsets.ModelViewSet):
         )
         return Response(CandidateDetailSerializer(candidate).data)
 
+    @action(detail=True, methods=['post'])
+    def assign_trainer(self, request, pk=None):
+        candidate = self.get_object()
+        trainer_id = request.data.get('trainer_id')
+        if not trainer_id:
+            return Response(
+                {'detail': 'trainer_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from accounts.models import User
+        try:
+            trainer = User.objects.get(id=trainer_id, is_active=True)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'Trainer not found or inactive.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        old_trainer = candidate.assigned_trainer
+        candidate.assigned_trainer = trainer
+        candidate.updated_by = request.user
+        candidate.save(update_fields=['assigned_trainer', 'updated_by', 'updated_at'])
+        CandidateActivityLog.objects.create(
+            candidate=candidate,
+            action_type=ACTION_TRAINER_ASSIGNED,
+            old_value=old_trainer.get_full_name() if old_trainer else '',
+            new_value=trainer.get_full_name(),
+            performed_by=request.user,
+        )
+        return Response(CandidateDetailSerializer(candidate).data)
+
     @action(detail=False, methods=['get'])
     def fresh(self, request):
         from django.db.models import Count
@@ -306,9 +337,13 @@ class CandidateViewSet(viewsets.ModelViewSet):
             'screening': status_counts.get('screening_scheduled', 0) + status_counts.get('screening_completed', 0),
             'interview_scheduled': status_counts.get('interview_scheduled', 0),
             'interview_completed': status_counts.get('interview_completed', 0),
+            'round2': status_counts.get('round2_scheduled', 0) + status_counts.get('round2_completed', 0),
+            'observation': status_counts.get('observation', 0),
+            'training': status_counts.get('training', 0) + status_counts.get('training_completed', 0),
             'submitted': status_counts.get('submitted', 0),
             'selected': status_counts.get('selected', 0),
             'joined': status_counts.get('joined', 0),
+            'hired': status_counts.get('hired', 0) + status_counts.get('fastgem_uploaded', 0),
             'rejected': status_counts.get('rejected', 0) + status_counts.get('dropped', 0),
         })
 
