@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { interviewSlotsAPI, locationsAPI, usersAPI, zoomRoomsAPI, bookingsAPI } from '../services/api';
+import { interviewSlotsAPI, locationsAPI, usersAPI, bookingsAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import Pagination from '../components/common/Pagination';
@@ -28,7 +28,6 @@ const INITIAL_FORM = {
   end_time: '',
   max_capacity: 1,
   meeting_link: '',
-  zoom_account: '',
 };
 
 function formatTime(t) {
@@ -55,8 +54,6 @@ export default function ManageSlotsPage() {
   // Reference data
   const [locations, setLocations] = useState([]);
   const [hiringManagers, setHiringManagers] = useState([]);
-  const [zoomRooms, setZoomRooms] = useState([]);
-
   // Modal
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -79,10 +76,6 @@ export default function ManageSlotsPage() {
     }).catch(() => {});
     usersAPI.getHiringManagers({ active_only: true }).then(({ data }) => {
       setHiringManagers(Array.isArray(data) ? data : data.results || []);
-    }).catch(() => {});
-    zoomRoomsAPI.list().then(({ data }) => {
-      const rooms = Array.isArray(data) ? data : data.results || [];
-      setZoomRooms(rooms.filter(r => r.is_active));
     }).catch(() => {});
   }, []);
 
@@ -144,7 +137,6 @@ export default function ManageSlotsPage() {
         max_capacity: Number(form.max_capacity) || 1,
       };
       if (form.meeting_link) payload.meeting_link = form.meeting_link;
-      if (form.zoom_account) payload.zoom_account = Number(form.zoom_account);
       await interviewSlotsAPI.create(payload);
       setShowModal(false);
       setForm(INITIAL_FORM);
@@ -485,17 +477,6 @@ export default function ManageSlotsPage() {
                 <label className="form-label form-label-sm">Max Capacity</label>
                 <input type="number" className="form-control form-control-sm" name="max_capacity"
                   min="1" value={form.max_capacity} onChange={handleFormChange} />
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label form-label-sm">Zoom Room</label>
-                <select className="form-select form-select-sm" name="zoom_account"
-                  value={form.zoom_account} onChange={handleFormChange}>
-                  <option value="">None</option>
-                  {zoomRooms.map((r) => (
-                    <option key={r.id} value={r.id}>{r.room_name}</option>
-                  ))}
-                </select>
               </div>
 
               <div className="mb-3">

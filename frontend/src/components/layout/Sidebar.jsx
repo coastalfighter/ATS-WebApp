@@ -24,6 +24,10 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
             <i className="bi bi-people-fill"></i>
           </div>
           <span>ATS System</span>
+          <button className="sidebar-collapse-btn" onClick={() => setCollapsed(!collapsed)}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+            <i className={`bi bi-chevron-${collapsed ? 'right' : 'left'}`}></i>
+          </button>
         </div>
         <nav className="sidebar-nav">
           <div className="sidebar-section">Main</div>
@@ -125,10 +129,6 @@ export default function Sidebar({ show, onClose, onCollapseChange }) {
             <i className="bi bi-key-fill"></i> <span>Change Password</span>
           </NavLink>
         </nav>
-        <button className="sidebar-collapse-btn" onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-          <i className={`bi bi-chevron-${collapsed ? 'right' : 'left'}`}></i>
-        </button>
       </div>
       {show && <div className="sidebar-overlay" onClick={onClose} />}
     </>

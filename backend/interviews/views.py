@@ -231,7 +231,11 @@ class InterviewSlotViewSet(viewsets.ModelViewSet):
     def cancel(self, request, pk=None):
         slot = self.get_object()
         slot.status = InterviewSlot.SlotStatus.CANCELLED
-        slot.save(update_fields=['status'])
+        if slot.zoom_account:
+            slot.zoom_account = None
+            slot.save(update_fields=['status', 'zoom_account'])
+        else:
+            slot.save(update_fields=['status'])
         return Response(InterviewSlotSerializer(slot).data)
 
     @action(detail=True, methods=['post'])

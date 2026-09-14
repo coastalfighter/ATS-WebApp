@@ -143,7 +143,7 @@ class InterviewSlotCreateSerializer(serializers.ModelSerializer):
         model = InterviewSlot
         fields = [
             'location', 'hiring_manager', 'date', 'start_time',
-            'end_time', 'max_capacity', 'round_type', 'meeting_link', 'zoom_account',
+            'end_time', 'max_capacity', 'round_type', 'meeting_link',
         ]
         extra_kwargs = {
             'round_type': {'required': False},

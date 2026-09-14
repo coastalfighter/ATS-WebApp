@@ -1356,9 +1356,10 @@ th.cursor-pointer:hover { background: var(--primary-bg); }
 /* ===== COLLAPSIBLE SIDEBAR ===== */
 .sidebar-collapse-btn {
   position: absolute;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 1.15rem;
+  right: 0.5rem;
+  left: auto;
+  transform: none;
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -1392,6 +1393,13 @@ th.cursor-pointer:hover { background: var(--primary-bg); }
 .sidebar.collapsed .sidebar-brand {
   justify-content: center;
   padding: 1.25rem 0.5rem;
+  position: relative;
+}
+
+.sidebar.collapsed .sidebar-collapse-btn {
+  position: static;
+  margin-top: 0.5rem;
+  transform: none;
 }
 
 .sidebar.collapsed .sidebar-link {

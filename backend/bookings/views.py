@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from django.db.models import Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -13,6 +14,42 @@ from interviews.tasks import (
 )
 
 logger = logging.getLogger('ats')
+
+
+def _assign_zoom_room(slot):
+    """Auto-assign an available Zoom room to a slot if it doesn't already have one."""
+    if slot.zoom_account:
+        return
+    from interviews.models import ZoomAccount, InterviewSlot
+    busy_ids = InterviewSlot.objects.filter(
+        date=slot.date,
+        start_time__lt=slot.end_time,
+        end_time__gt=slot.start_time,
+        zoom_account__isnull=False,
+    ).exclude(
+        status=InterviewSlot.SlotStatus.CANCELLED,
+    ).exclude(pk=slot.pk).values_list('zoom_account_id', flat=True)
+
+    room = ZoomAccount.objects.filter(is_active=True).exclude(id__in=busy_ids).first()
+    if room:
+        slot.zoom_account = room
+        slot.save(update_fields=['zoom_account'])
+        logger.info('Auto-assigned Zoom room %s to slot %s', room.room_name, slot.pk)
+
+
+def _release_zoom_room(slot):
+    """Release the Zoom room from a slot when no active bookings remain."""
+    if not slot.zoom_account:
+        return
+    active = Booking.objects.filter(
+        interview_slot=slot,
+        status__in=[Booking.BookingStatus.PENDING, Booking.BookingStatus.CONFIRMED],
+    ).exists()
+    if not active:
+        room_name = slot.zoom_account.room_name
+        slot.zoom_account = None
+        slot.save(update_fields=['zoom_account'])
+        logger.info('Released Zoom room %s from slot %s', room_name, slot.pk)
 
 
 class BookingViewSet(viewsets.ModelViewSet):
@@ -92,6 +129,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
 
         slot = booking.interview_slot
+        _assign_zoom_room(slot)
+        slot.refresh_from_db()
         scheduled_at = datetime.combine(slot.date, slot.start_time)
 
         from interviews.models import Interview
@@ -176,6 +215,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             slot.save(update_fields=['booked_count'])
             slot.refresh_status()
 
+        _release_zoom_room(slot)
+
         BookingActivityLog.objects.create(
             booking=booking,
             action='booking_cancelled',
@@ -198,6 +239,8 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         booking.status = Booking.BookingStatus.NO_SHOW
         booking.save(update_fields=['status', 'updated_at'])
+
+        _release_zoom_room(booking.interview_slot)
 
         BookingActivityLog.objects.create(
             booking=booking,
