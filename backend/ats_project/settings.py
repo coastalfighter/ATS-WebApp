@@ -80,8 +80,7 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '5432'),
         'CONN_MAX_AGE': 600,
         'OPTIONS': {
-            'sslmode': 'verify-full',
-            'sslrootcert': 'system',
+            'sslmode': 'require',
         } if 'cockroach' in os.environ.get('DB_HOST', '') else {},
     }
 }
