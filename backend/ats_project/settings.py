@@ -81,6 +81,7 @@ DATABASES = {
         'CONN_MAX_AGE': 600,
         'OPTIONS': {
             'sslmode': 'verify-full',
+            'sslrootcert': 'system',
         } if 'cockroach' in os.environ.get('DB_HOST', '') else {},
     }
 }
