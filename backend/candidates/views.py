@@ -367,12 +367,16 @@ class CandidateViewSet(viewsets.ModelViewSet):
     def duplicates(self, request):
         from django.db.models import Count
         dup_emails = (
-            Candidate.objects.values('email')
+            Candidate.objects.filter(is_deleted=False).values('email')
             .annotate(cnt=Count('id'))
             .filter(cnt__gt=1)
             .values_list('email', flat=True)
         )
-        qs = Candidate.objects.filter(email__in=dup_emails).order_by('email', '-created_at')
+        qs = Candidate.objects.filter(
+            email__in=dup_emails, is_deleted=False
+        ).select_related(
+            'assigned_recruiter', 'assigned_trainer'
+        ).order_by('email', '-created_at')
         page = self.paginate_queryset(qs)
         if page is not None:
             return self.get_paginated_response(CandidateListSerializer(page, many=True).data)
