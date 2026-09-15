@@ -246,8 +246,8 @@ class CandidateViewSet(viewsets.ModelViewSet):
     def fresh(self, request):
         from django.db.models import Count
         qs = Candidate.objects.select_related(
-            'assigned_recruiter', 'created_by', 'updated_by'
-        ).filter(current_bucket=BUCKET_FRESH).annotate(
+            'assigned_recruiter', 'assigned_trainer', 'created_by', 'updated_by'
+        ).filter(current_bucket=BUCKET_FRESH, is_deleted=False).annotate(
             call_count=Count('call_logs')
         )
         qs = self.filter_queryset(qs)
@@ -311,8 +311,8 @@ class CandidateViewSet(viewsets.ModelViewSet):
     def pipeline(self, request):
         from django.db.models import Count
         qs = Candidate.objects.select_related(
-            'assigned_recruiter', 'created_by', 'updated_by'
-        ).filter(current_bucket=BUCKET_PIPELINE).annotate(
+            'assigned_recruiter', 'assigned_trainer', 'created_by', 'updated_by'
+        ).filter(current_bucket=BUCKET_PIPELINE, is_deleted=False).annotate(
             call_count=Count('call_logs')
         )
         qs = self.filter_queryset(qs)

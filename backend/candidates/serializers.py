@@ -21,7 +21,7 @@ def validate_phone_number(value, field_name='phone'):
 
 
 class CandidateListSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='full_name', read_only=True)
+    full_name = serializers.CharField(read_only=True)
     assigned_recruiter_name = serializers.SerializerMethodField()
     assigned_trainer_name = serializers.SerializerMethodField()
     call_count = serializers.IntegerField(read_only=True, default=0)
@@ -51,7 +51,7 @@ class CandidateListSerializer(serializers.ModelSerializer):
 
 
 class CandidateDetailSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='full_name', read_only=True)
+    full_name = serializers.CharField(read_only=True)
     assigned_recruiter_detail = UserSerializer(source='assigned_recruiter', read_only=True)
     assigned_trainer_name = serializers.SerializerMethodField()
     created_by_name = serializers.SerializerMethodField()
