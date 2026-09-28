@@ -66,6 +66,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ats_project.wsgi.application'
 
+DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.postgresql')
+if 'cockroach' in os.environ.get('DB_HOST', ''):
+    DB_ENGINE = 'django_cockroachdb'
+
 _db_options = {}
 if os.environ.get('DB_SSLMODE'):
     _db_options['sslmode'] = os.environ['DB_SSLMODE']
@@ -75,7 +79,7 @@ if os.environ.get('DB_HOST', 'localhost') != 'localhost':
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': DB_ENGINE,
         'NAME': os.environ.get('DB_NAME', 'ats_db'),
         'USER': os.environ.get('DB_USER', 'ats_user'),
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
