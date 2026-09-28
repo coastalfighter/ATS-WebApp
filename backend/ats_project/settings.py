@@ -79,9 +79,10 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 600,
+        'CONN_MAX_AGE': 0,
         'OPTIONS': {
             'sslmode': 'require',
+            'connect_timeout': 10,
         } if 'cockroach' in os.environ.get('DB_HOST', '') else {},
     }
 }

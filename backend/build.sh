@@ -3,4 +3,6 @@ set -o errexit
 
 pip install -r requirements.txt
 python manage.py collectstatic --noinput
-python manage.py migrate || echo "Migration failed but continuing deployment"
+
+# Migration may fail if DB is temporarily unreachable
+python manage.py migrate 2>&1 || echo "WARNING: Migration failed, continuing deployment"
