@@ -35,7 +35,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'ats_project.middleware.DebugErrorMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -67,23 +66,23 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ats_project.wsgi.application'
 
-DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.postgresql')
-if 'cockroach' in os.environ.get('DB_HOST', ''):
-    DB_ENGINE = 'django_cockroachdb'
+_db_options = {}
+if os.environ.get('DB_SSLMODE'):
+    _db_options['sslmode'] = os.environ['DB_SSLMODE']
+if os.environ.get('DB_HOST', 'localhost') != 'localhost':
+    _db_options.setdefault('sslmode', 'require')
+    _db_options['connect_timeout'] = 10
 
 DATABASES = {
     'default': {
-        'ENGINE': DB_ENGINE,
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'ats_db'),
         'USER': os.environ.get('DB_USER', 'ats_user'),
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
         'CONN_MAX_AGE': 0,
-        'OPTIONS': {
-            'sslmode': 'require',
-            'connect_timeout': 10,
-        } if 'cockroach' in os.environ.get('DB_HOST', '') else {},
+        'OPTIONS': _db_options,
     }
 }
 
@@ -136,7 +135,6 @@ REST_FRAMEWORK = {
         'anon': '20/minute',
         'user': '200/minute',
     },
-    'EXCEPTION_HANDLER': 'ats_project.exception_handler.detailed_exception_handler',
     'DEFAULT_PAGINATION_CLASS': 'ats_project.pagination.FlexiblePagination',
     'PAGE_SIZE': 25,
     'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S%z',
