@@ -205,6 +205,9 @@ export const notificationsAPI = {
 export const dashboardAPI = {
   recruiter: (params) => api.get('/dashboard/recruiter/', { params }),
   admin: (params) => api.get('/dashboard/admin/', { params }),
+  bookingGoals: (params) => api.get('/dashboard/booking-goals/', { params }),
+  setBookingGoals: (data) => api.post('/dashboard/booking-goals/', data),
+  deleteBookingGoal: (id) => api.delete(`/dashboard/booking-goals/?id=${id}`),
 };
 
 export const reportsAPI = {

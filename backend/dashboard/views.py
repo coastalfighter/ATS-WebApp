@@ -1,10 +1,12 @@
-from datetime import timedelta
+from datetime import timedelta, date as date_cls
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import action
+from rest_framework import viewsets, status
 
 from accounts.permissions import IsAdminOrSubadmin
 from candidates.models import Candidate, CandidateActivityLog, UploadBatch
@@ -14,6 +16,9 @@ from candidates.constants import (
     PIPELINE_SELECTED, PIPELINE_JOINED,
 )
 from interviews.models import Interview, CallLog, ZoomAccount
+from bookings.models import Booking
+from .models import WeeklyBookingGoal
+from .serializers import WeeklyBookingGoalSerializer, BulkSetGoalsSerializer
 
 
 class RecruiterDashboardView(APIView):
@@ -77,7 +82,6 @@ class AdminDashboardView(APIView):
         today = timezone.now().date()
         if date_from:
             try:
-                from datetime import date as date_cls
                 parts = date_from.split('-')
                 start_date = date_cls(int(parts[0]), int(parts[1]), int(parts[2]))
             except (ValueError, IndexError):
@@ -87,7 +91,6 @@ class AdminDashboardView(APIView):
 
         if date_to:
             try:
-                from datetime import date as date_cls
                 parts = date_to.split('-')
                 end_date = date_cls(int(parts[0]), int(parts[1]), int(parts[2]))
             except (ValueError, IndexError):
@@ -241,3 +244,127 @@ class AdminDashboardView(APIView):
             'recruiter_stats': recruiter_stats,
             'recent_activity': CandidateActivityLogSerializer(recent_activity, many=True).data,
         })
+
+
+class WeeklyBookingGoalView(APIView):
+    permission_classes = [IsAdminOrSubadmin]
+
+    def _parse_date(self, s):
+        parts = s.split('-')
+        return date_cls(int(parts[0]), int(parts[1]), int(parts[2]))
+
+    def _get_week_range(self, week_start):
+        return week_start, week_start + timedelta(days=6)
+
+    def get(self, request):
+        week_start_param = request.query_params.get('week_start')
+        today = timezone.now().date()
+
+        if week_start_param:
+            try:
+                week_start = self._parse_date(week_start_param)
+            except (ValueError, IndexError):
+                week_start = today - timedelta(days=today.weekday())
+        else:
+            week_start = today - timedelta(days=today.weekday())
+
+        week_start_dt, week_end = self._get_week_range(week_start)
+
+        goals = WeeklyBookingGoal.objects.filter(
+            week_start=week_start_dt
+        ).select_related('location', 'recruiter').order_by('location__name', 'recruiter__first_name')
+
+        rows = []
+        total_goal = 0
+        total_booked = 0
+        total_showed = 0
+        total_remaining = 0
+
+        for g in goals:
+            booking_filter = Q(
+                interview_slot__location=g.location,
+                interview_slot__date__gte=week_start_dt,
+                interview_slot__date__lte=week_end,
+            )
+            if g.recruiter:
+                booking_filter &= Q(booked_by=g.recruiter)
+
+            booked = Booking.objects.filter(booking_filter).exclude(
+                status='cancelled'
+            ).count()
+
+            showed = Booking.objects.filter(
+                booking_filter, status='confirmed'
+            ).count()
+
+            remaining = max(0, g.goal - booked)
+            show_up_pct = round((showed / booked) * 100, 2) if booked > 0 else 0
+
+            total_goal += g.goal
+            total_booked += booked
+            total_showed += showed
+            total_remaining += remaining
+
+            rows.append({
+                'id': g.id,
+                'location_id': g.location_id,
+                'location_name': g.location.name,
+                'recruiter_id': g.recruiter_id,
+                'recruiter_name': (g.recruiter.first_name or g.recruiter.get_full_name()) if g.recruiter else '',
+                'goal': g.goal,
+                'booked': booked,
+                'showed': showed,
+                'remaining': remaining,
+                'show_up_pct': show_up_pct,
+            })
+
+        total_show_up_pct = round((total_showed / total_booked) * 100, 2) if total_booked > 0 else 0
+
+        return Response({
+            'week_start': str(week_start_dt),
+            'week_end': str(week_end),
+            'goals': rows,
+            'totals': {
+                'goal': total_goal,
+                'booked': total_booked,
+                'showed': total_showed,
+                'remaining': total_remaining,
+                'show_up_pct': total_show_up_pct,
+            },
+        })
+
+    def post(self, request):
+        serializer = BulkSetGoalsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        week_start = serializer.validated_data['week_start']
+        goals_data = serializer.validated_data['goals']
+        created_count = 0
+
+        for item in goals_data:
+            WeeklyBookingGoal.objects.update_or_create(
+                location_id=item['location'],
+                recruiter_id=item.get('recruiter'),
+                week_start=week_start,
+                defaults={
+                    'goal': item['goal'],
+                    'created_by': request.user,
+                },
+            )
+            created_count += 1
+
+        return Response(
+            {'detail': f'{created_count} goals saved for week of {week_start}.'},
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request):
+        goal_id = request.query_params.get('id')
+        if not goal_id:
+            return Response({'detail': 'id parameter required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            goal = WeeklyBookingGoal.objects.get(id=goal_id)
+            goal.delete()
+            return Response({'detail': 'Goal deleted.'})
+        except WeeklyBookingGoal.DoesNotExist:
+            return Response({'detail': 'Goal not found.'}, status=status.HTTP_404_NOT_FOUND)

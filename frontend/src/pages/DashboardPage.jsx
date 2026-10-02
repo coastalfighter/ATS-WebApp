@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { dashboardAPI, reportsAPI } from '../services/api';
+import { dashboardAPI, reportsAPI, locationsAPI } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AlertMessage from '../components/common/AlertMessage';
 import { STATUS_LABELS, formatDateTime } from '../utils/statusHelpers';
@@ -146,6 +146,19 @@ export default function DashboardPage() {
   const [appliedFrom, setAppliedFrom] = useState(dateFrom);
   const [appliedTo, setAppliedTo] = useState(dateTo);
   const [kpiData, setKpiData] = useState(null);
+  const [goalsData, setGoalsData] = useState(null);
+  const [goalsWeek, setGoalsWeek] = useState(() => {
+    const t = new Date();
+    const day = t.getDay();
+    const mon = new Date(t);
+    mon.setDate(t.getDate() - ((day + 6) % 7));
+    return formatDateInput(mon);
+  });
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [goalFormRows, setGoalFormRows] = useState([]);
+  const [allLocations, setAllLocations] = useState([]);
+  const [allRecruiters, setAllRecruiters] = useState([]);
+  const [goalSaving, setGoalSaving] = useState(false);
 
   const loadDashboard = useCallback(async (from, to) => {
     setLoading(true);
@@ -177,6 +190,67 @@ export default function DashboardPage() {
       })
       .catch(() => {});
   }, [user, isAdminOrSubadmin]);
+
+  const loadBookingGoals = useCallback(async (weekStart) => {
+    try {
+      const { data: result } = await dashboardAPI.bookingGoals({ week_start: weekStart });
+      setGoalsData(result);
+    } catch { /* goals not available yet */ }
+  }, []);
+
+  useEffect(() => {
+    if (isAdminOrSubadmin) loadBookingGoals(goalsWeek);
+  }, [isAdminOrSubadmin, goalsWeek, loadBookingGoals]);
+
+  const openGoalForm = async () => {
+    try {
+      const [locRes] = await Promise.all([locationsAPI.list()]);
+      const locs = locRes.data.results || locRes.data || [];
+      setAllLocations(locs);
+      const recs = data?.recruiter_stats || [];
+      setAllRecruiters(recs);
+      if (goalsData && goalsData.goals.length > 0) {
+        setGoalFormRows(goalsData.goals.map(g => ({
+          location: g.location_id,
+          recruiter: g.recruiter_id || '',
+          goal: g.goal,
+        })));
+      } else {
+        setGoalFormRows(locs.filter(l => l.is_active).map(l => ({
+          location: l.id,
+          recruiter: '',
+          goal: 0,
+        })));
+      }
+      setShowGoalForm(true);
+    } catch { /* ignore */ }
+  };
+
+  const addGoalRow = () => {
+    setGoalFormRows([...goalFormRows, { location: '', recruiter: '', goal: 0 }]);
+  };
+
+  const removeGoalRow = (idx) => {
+    setGoalFormRows(goalFormRows.filter((_, i) => i !== idx));
+  };
+
+  const saveGoals = async () => {
+    setGoalSaving(true);
+    try {
+      const payload = {
+        week_start: goalsWeek,
+        goals: goalFormRows.filter(r => r.location && r.goal > 0).map(r => ({
+          location: parseInt(r.location),
+          recruiter: r.recruiter ? parseInt(r.recruiter) : null,
+          goal: parseInt(r.goal),
+        })),
+      };
+      await dashboardAPI.setBookingGoals(payload);
+      setShowGoalForm(false);
+      loadBookingGoals(goalsWeek);
+    } catch { /* ignore */ }
+    setGoalSaving(false);
+  };
 
   const handleApply = () => {
     setAppliedFrom(dateFrom);
@@ -507,6 +581,179 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Weekly Booking Goals */}
+      {isAdminOrSubadmin && (
+        <div className="table-container mb-4">
+          <div className="p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div className="d-flex align-items-center gap-2">
+              <i className="bi bi-bullseye" style={{ color: '#4f46e5', fontSize: '1.1rem' }}></i>
+              <h6 className="mb-0 fw-bold">Weekly Booking Goals</h6>
+            </div>
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <div className="d-flex align-items-center gap-1">
+                <button className="btn btn-outline-secondary btn-sm px-2" title="Previous week"
+                  onClick={() => {
+                    const d = new Date(goalsWeek + 'T00:00:00');
+                    d.setDate(d.getDate() - 7);
+                    setGoalsWeek(formatDateInput(d));
+                  }}>
+                  <i className="bi bi-chevron-left"></i>
+                </button>
+                <input type="date" className="form-control form-control-sm" style={{ width: '140px' }}
+                  value={goalsWeek} onChange={e => setGoalsWeek(e.target.value)} />
+                <button className="btn btn-outline-secondary btn-sm px-2" title="Next week"
+                  onClick={() => {
+                    const d = new Date(goalsWeek + 'T00:00:00');
+                    d.setDate(d.getDate() + 7);
+                    setGoalsWeek(formatDateInput(d));
+                  }}>
+                  <i className="bi bi-chevron-right"></i>
+                </button>
+              </div>
+              <button className="btn btn-primary btn-sm d-flex align-items-center gap-1" onClick={openGoalForm}>
+                <i className="bi bi-pencil-square"></i> Set Goals
+              </button>
+            </div>
+          </div>
+
+          {goalsData && goalsData.goals.length > 0 && (
+            <div className="p-2 text-center" style={{ background: 'var(--bg-body)', fontSize: '0.8rem' }}>
+              <strong>
+                {new Date(goalsData.week_start + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {' – '}
+                {new Date(goalsData.week_end + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </strong>
+            </div>
+          )}
+
+          {showGoalForm && (
+            <div className="p-3 border-bottom" style={{ background: 'var(--bg-body)' }}>
+              <h6 className="mb-3 fw-bold">Set Goals for Week of {goalsWeek}</h6>
+              {goalFormRows.map((row, idx) => (
+                <div key={idx} className="row g-2 mb-2 align-items-end">
+                  <div className="col-md-4">
+                    {idx === 0 && <label className="form-label" style={{ fontSize: '0.75rem' }}>Location</label>}
+                    <select className="form-select form-select-sm" value={row.location}
+                      onChange={e => {
+                        const rows = [...goalFormRows];
+                        rows[idx] = { ...rows[idx], location: e.target.value };
+                        setGoalFormRows(rows);
+                      }}>
+                      <option value="">Select location...</option>
+                      {allLocations.map(l => (
+                        <option key={l.id} value={l.id}>{l.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-4">
+                    {idx === 0 && <label className="form-label" style={{ fontSize: '0.75rem' }}>Recruiter (optional)</label>}
+                    <select className="form-select form-select-sm" value={row.recruiter}
+                      onChange={e => {
+                        const rows = [...goalFormRows];
+                        rows[idx] = { ...rows[idx], recruiter: e.target.value };
+                        setGoalFormRows(rows);
+                      }}>
+                      <option value="">All recruiters</option>
+                      {allRecruiters.map(r => (
+                        <option key={r.assigned_recruiter__id} value={r.assigned_recruiter__id}>
+                          {r.assigned_recruiter__first_name} {r.assigned_recruiter__last_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-2">
+                    {idx === 0 && <label className="form-label" style={{ fontSize: '0.75rem' }}>Goal</label>}
+                    <input type="number" min="0" className="form-control form-control-sm" value={row.goal}
+                      onChange={e => {
+                        const rows = [...goalFormRows];
+                        rows[idx] = { ...rows[idx], goal: e.target.value };
+                        setGoalFormRows(rows);
+                      }} />
+                  </div>
+                  <div className="col-md-2">
+                    <button className="btn btn-outline-danger btn-sm" onClick={() => removeGoalRow(idx)}>
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div className="d-flex gap-2 mt-3">
+                <button className="btn btn-outline-secondary btn-sm" onClick={addGoalRow}>
+                  <i className="bi bi-plus-lg me-1"></i>Add Row
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={saveGoals} disabled={goalSaving}>
+                  {goalSaving ? 'Saving...' : 'Save Goals'}
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setShowGoalForm(false)}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table table-sm mb-0" style={{ fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ background: '#4f46e5', color: '#fff' }}>
+                  <th style={{ padding: '8px 12px' }}>LOCATION</th>
+                  <th className="text-center" style={{ padding: '8px 12px' }}>Goal</th>
+                  <th className="text-center" style={{ padding: '8px 12px' }}>Booked</th>
+                  <th className="text-center" style={{ padding: '8px 12px' }}>Showed</th>
+                  <th className="text-center" style={{ padding: '8px 12px' }}>Remaining</th>
+                  <th className="text-center" style={{ padding: '8px 12px' }}>Show Up</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(!goalsData || goalsData.goals.length === 0) ? (
+                  <tr>
+                    <td colSpan="6" className="text-center text-muted py-4">
+                      No goals set for this week. Click "Set Goals" to get started.
+                    </td>
+                  </tr>
+                ) : goalsData.goals.map((g) => {
+                  const met = g.booked >= g.goal;
+                  const rowBg = met ? '#dcfce720' : '#fef3c720';
+                  return (
+                    <tr key={g.id} style={{ background: rowBg }}>
+                      <td style={{ padding: '8px 12px' }}>
+                        <span className="fw-medium">{g.location_name}</span>
+                        {g.recruiter_name && (
+                          <span className="text-muted"> ({g.recruiter_name})</span>
+                        )}
+                      </td>
+                      <td className="text-center fw-bold" style={{ padding: '8px 12px' }}>{g.goal}</td>
+                      <td className="text-center fw-bold" style={{ padding: '8px 12px' }}>{g.booked}</td>
+                      <td className="text-center" style={{ padding: '8px 12px' }}>{g.showed}</td>
+                      <td className="text-center" style={{ padding: '8px 12px' }}>
+                        <span className={g.remaining > 0 ? 'text-danger fw-bold' : ''}>{g.remaining}</span>
+                      </td>
+                      <td className="text-center" style={{ padding: '8px 12px' }}>
+                        <span style={{
+                          color: g.show_up_pct >= 50 ? '#16a34a' : g.show_up_pct > 0 ? '#ea580c' : '#94a3b8',
+                          fontWeight: 600,
+                        }}>
+                          {g.show_up_pct.toFixed(2)}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {goalsData && goalsData.goals.length > 0 && (
+                  <tr style={{ background: '#4f46e510', fontWeight: 700 }}>
+                    <td style={{ padding: '8px 12px' }}>TOTAL</td>
+                    <td className="text-center" style={{ padding: '8px 12px' }}>{goalsData.totals.goal}</td>
+                    <td className="text-center" style={{ padding: '8px 12px' }}>{goalsData.totals.booked}</td>
+                    <td className="text-center" style={{ padding: '8px 12px' }}>{goalsData.totals.showed}</td>
+                    <td className="text-center" style={{ padding: '8px 12px' }}>{goalsData.totals.remaining}</td>
+                    <td className="text-center" style={{ padding: '8px 12px' }}>
+                      {goalsData.totals.show_up_pct.toFixed(2)}%
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
