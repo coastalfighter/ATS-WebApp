@@ -3,16 +3,17 @@ from django.conf import settings
 
 
 class ZoomAccount(models.Model):
+    room_number = models.PositiveIntegerField(default=1)
     room_name = models.CharField(max_length=100)
-    account_id = models.CharField(max_length=200)
-    client_id = models.CharField(max_length=200)
-    client_secret = models.CharField(max_length=200)
+    zoom_email = models.EmailField(max_length=200, blank=True)
+    personal_meeting_link = models.URLField(max_length=2048, blank=True)
     is_active = models.BooleanField(default=True)
+    notes = models.CharField(max_length=500, blank=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['room_name']
+        ordering = ['room_number']
 
     def __str__(self):
         return f"{self.room_name} ({'Active' if self.is_active else 'Inactive'})"

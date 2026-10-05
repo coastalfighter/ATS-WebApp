@@ -10,8 +10,10 @@ export default function ZoomRoomsPage() {
   const [success, setSuccess] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
-  const [testing, setTesting] = useState(null);
-  const [form, setForm] = useState({ room_name: '', account_id: '', client_id: '', client_secret: '' });
+  const [form, setForm] = useState({
+    room_number: '', room_name: '', zoom_email: '',
+    personal_meeting_link: '', is_active: true, notes: '',
+  });
 
   const loadRooms = async () => {
     setLoading(true);
@@ -28,7 +30,10 @@ export default function ZoomRoomsPage() {
   useEffect(() => { loadRooms(); }, []);
 
   const resetForm = () => {
-    setForm({ room_name: '', account_id: '', client_id: '', client_secret: '' });
+    setForm({
+      room_number: '', room_name: '', zoom_email: '',
+      personal_meeting_link: '', is_active: true, notes: '',
+    });
     setShowForm(false);
     setEditingRoom(null);
   };
@@ -37,52 +42,54 @@ export default function ZoomRoomsPage() {
     e.preventDefault();
     setError(''); setSuccess('');
     try {
+      const payload = { ...form, room_number: parseInt(form.room_number) || 1 };
       if (editingRoom) {
-        const payload = { ...form };
-        if (!payload.client_secret) delete payload.client_secret;
         await zoomRoomsAPI.update(editingRoom.id, payload);
         setSuccess(`Room "${form.room_name}" updated.`);
       } else {
-        await zoomRoomsAPI.create(form);
+        await zoomRoomsAPI.create(payload);
         setSuccess(`Room "${form.room_name}" added.`);
       }
       resetForm();
       loadRooms();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to save room.');
+      const data = err.response?.data;
+      if (data && typeof data === 'object') {
+        const msgs = Object.entries(data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`);
+        setError(msgs.join(' | '));
+      } else {
+        setError('Failed to save room.');
+      }
     }
   };
 
   const handleEdit = (room) => {
-    setForm({ room_name: room.room_name, account_id: room.account_id, client_id: room.client_id, client_secret: '' });
+    setForm({
+      room_number: room.room_number || '',
+      room_name: room.room_name,
+      zoom_email: room.zoom_email || '',
+      personal_meeting_link: room.personal_meeting_link || '',
+      is_active: room.is_active,
+      notes: room.notes || '',
+    });
     setEditingRoom(room);
     setShowForm(true);
   };
 
   const handleToggle = async (room) => {
+    setError(''); setSuccess('');
     try {
       await zoomRoomsAPI.toggleActive(room.id);
+      setSuccess(`${room.room_name} status updated.`);
       loadRooms();
     } catch {
       setError('Failed to toggle room status.');
     }
   };
 
-  const handleTest = async (room) => {
-    setTesting(room.id);
-    setError(''); setSuccess('');
-    try {
-      const { data } = await zoomRoomsAPI.testConnection(room.id);
-      setSuccess(`${room.room_name}: ${data.detail}`);
-    } catch (err) {
-      setError(`${room.room_name}: ${err.response?.data?.detail || 'Connection test failed.'}`);
-    } finally {
-      setTesting(null);
-    }
-  };
-
   const handleDelete = async (room) => {
     if (!confirm(`Delete room "${room.room_name}"?`)) return;
+    setError(''); setSuccess('');
     try {
       await zoomRoomsAPI.delete(room.id);
       setSuccess(`Room "${room.room_name}" deleted.`);
@@ -104,43 +111,62 @@ export default function ZoomRoomsPage() {
         </button>
       </div>
 
+      <div className="alert alert-info py-2 mb-3" style={{ fontSize: '0.85rem' }}>
+        <i className="bi bi-info-circle me-2"></i>
+        Use Basic Zoom personal meeting links. ATS will assign one free room per overlapping slot.
+      </div>
+
       <AlertMessage type="success" message={success} onClose={() => setSuccess('')} />
       <AlertMessage message={error} onClose={() => setError('')} />
 
       {showForm && (
         <div className="table-container p-3 mb-3">
-          <h6 className="mb-3">{editingRoom ? 'Edit Room' : 'Add Zoom Room'}</h6>
+          <h6 className="mb-3">{editingRoom ? `Edit: ${editingRoom.room_name}` : 'Add Zoom Room'}</h6>
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
-              <div className="col-md-6">
+              <div className="col-md-3">
+                <label className="form-label">Room No.</label>
+                <input type="number" className="form-control form-control-sm" required min="1"
+                  placeholder="e.g., 1"
+                  value={form.room_number} onChange={e => setForm({ ...form, room_number: e.target.value })} />
+              </div>
+              <div className="col-md-4">
                 <label className="form-label">Room Name</label>
                 <input type="text" className="form-control form-control-sm" required
-                  placeholder="e.g., Interview Room 1"
+                  placeholder="e.g., Zoom Room 1"
                   value={form.room_name} onChange={e => setForm({ ...form, room_name: e.target.value })} />
               </div>
-              <div className="col-md-6">
-                <label className="form-label">Account ID</label>
-                <input type="text" className="form-control form-control-sm" required
-                  placeholder="Zoom Account ID"
-                  value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })} />
+              <div className="col-md-5">
+                <label className="form-label">Zoom Email</label>
+                <input type="email" className="form-control form-control-sm"
+                  placeholder="e.g., admin@company.com"
+                  value={form.zoom_email} onChange={e => setForm({ ...form, zoom_email: e.target.value })} />
               </div>
-              <div className="col-md-6">
-                <label className="form-label">Client ID</label>
-                <input type="text" className="form-control form-control-sm" required
-                  placeholder="OAuth App Client ID"
-                  value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })} />
+              <div className="col-md-8">
+                <label className="form-label">Personal Meeting Link</label>
+                <input type="url" className="form-control form-control-sm" required
+                  placeholder="https://zoom.us/j/1234567890"
+                  value={form.personal_meeting_link} onChange={e => setForm({ ...form, personal_meeting_link: e.target.value })} />
               </div>
-              <div className="col-md-6">
-                <label className="form-label">Client Secret {editingRoom && <small className="text-muted">(leave blank to keep existing)</small>}</label>
-                <input type="password" className="form-control form-control-sm"
-                  required={!editingRoom}
-                  placeholder="OAuth App Client Secret"
-                  value={form.client_secret} onChange={e => setForm({ ...form, client_secret: e.target.value })} />
+              <div className="col-md-4">
+                <label className="form-label">Status</label>
+                <select className="form-select form-select-sm"
+                  value={form.is_active ? 'true' : 'false'}
+                  onChange={e => setForm({ ...form, is_active: e.target.value === 'true' })}>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+              <div className="col-12">
+                <label className="form-label">Notes</label>
+                <input type="text" className="form-control form-control-sm"
+                  placeholder="e.g., Basic Zoom personal room"
+                  value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
               </div>
             </div>
             <div className="mt-3 d-flex gap-2">
               <button type="submit" className="btn btn-primary btn-sm">
-                <i className="bi bi-check-lg me-1"></i> {editingRoom ? 'Update' : 'Add Room'}
+                <i className="bi bi-check-lg me-1"></i> {editingRoom ? 'Update Room' : 'Add Room'}
               </button>
               <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>Cancel</button>
             </div>
@@ -148,68 +174,67 @@ export default function ZoomRoomsPage() {
         </div>
       )}
 
-      <div className="row g-3">
-        {rooms.length === 0 ? (
-          <div className="col-12">
-            <div className="table-container p-4 text-center text-muted">
-              <i className="bi bi-camera-video d-block mb-2" style={{ fontSize: '2rem', opacity: 0.4 }}></i>
-              No Zoom rooms configured. Add your first room to start scheduling interviews with Zoom.
-            </div>
-          </div>
-        ) : rooms.map(room => (
-          <div key={room.id} className="col-md-6 col-lg-4">
-            <div className="table-container p-3 h-100">
-              <div className="d-flex justify-content-between align-items-start mb-2">
-                <div className="d-flex align-items-center gap-2">
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 'var(--radius)',
-                    background: room.is_active ? '#2D8CFF15' : '#f1f5f9',
-                    color: room.is_active ? '#2D8CFF' : '#94a3b8',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <i className="bi bi-camera-video-fill"></i>
-                  </div>
-                  <div>
-                    <div className="fw-medium">{room.room_name}</div>
-                    <span className={`badge bg-${room.is_active ? 'success' : 'secondary'}`} style={{ fontSize: '0.65rem' }}>
-                      {room.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="d-flex gap-3 mb-3">
-                <div>
-                  <small className="text-muted d-block">Active Meetings</small>
-                  <span className="fw-bold">{room.active_meetings || 0}</span>
-                </div>
-                <div>
-                  <small className="text-muted d-block">Last Used</small>
-                  <span style={{ fontSize: '0.82rem' }}>
-                    {room.last_used_at ? new Date(room.last_used_at).toLocaleDateString() : 'Never'}
+      <div className="table-container">
+        <table className="table table-hover table-sm mb-0">
+          <thead className="table-light">
+            <tr>
+              <th style={{ width: '60px' }}>Room</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Meeting Link</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th>Active</th>
+              <th style={{ width: '120px' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rooms.length === 0 ? (
+              <tr><td colSpan="8" className="text-center text-muted py-4">
+                <i className="bi bi-camera-video d-block mb-2" style={{ fontSize: '1.5rem', opacity: 0.4 }}></i>
+                No Zoom rooms configured. Add your first room to start.
+              </td></tr>
+            ) : rooms.map(room => (
+              <tr key={room.id}>
+                <td>
+                  <span className="badge bg-primary">{room.room_number || '-'}</span>
+                </td>
+                <td className="fw-medium">{room.room_name}</td>
+                <td><small>{room.zoom_email || '-'}</small></td>
+                <td>
+                  {room.personal_meeting_link ? (
+                    <a href={room.personal_meeting_link} target="_blank" rel="noreferrer"
+                      style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>
+                      {room.personal_meeting_link}
+                    </a>
+                  ) : '-'}
+                </td>
+                <td>
+                  <span className={`badge bg-${room.is_active ? 'success' : 'danger'}`}>
+                    {room.is_active ? 'Active' : 'Inactive'}
                   </span>
-                </div>
-              </div>
-
-              <div className="d-flex gap-1 flex-wrap">
-                <button className="btn btn-outline-primary btn-sm py-0" onClick={() => handleEdit(room)}>
-                  <i className="bi bi-pencil"></i>
-                </button>
-                <button className={`btn btn-outline-${room.is_active ? 'warning' : 'success'} btn-sm py-0`}
-                  onClick={() => handleToggle(room)}>
-                  <i className={`bi bi-${room.is_active ? 'pause' : 'play'}`}></i>
-                </button>
-                <button className="btn btn-outline-info btn-sm py-0"
-                  onClick={() => handleTest(room)} disabled={testing === room.id}>
-                  {testing === room.id ? <span className="spinner-border spinner-border-sm" style={{ width: 12, height: 12 }}></span> : <i className="bi bi-wifi"></i>}
-                </button>
-                <button className="btn btn-outline-danger btn-sm py-0" onClick={() => handleDelete(room)}>
-                  <i className="bi bi-trash"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+                </td>
+                <td><small className="text-muted">{room.notes || '-'}</small></td>
+                <td><small>{room.active_meetings || 0} meetings</small></td>
+                <td>
+                  <div className="btn-group btn-group-sm">
+                    <button className="btn btn-outline-primary" title="Edit" onClick={() => handleEdit(room)}>
+                      <i className="bi bi-pencil"></i>
+                    </button>
+                    <button className={`btn btn-outline-${room.is_active ? 'warning' : 'success'}`}
+                      title={room.is_active ? 'Deactivate' : 'Activate'}
+                      onClick={() => handleToggle(room)}>
+                      <i className={`bi bi-${room.is_active ? 'pause' : 'play'}`}></i>
+                    </button>
+                    <button className="btn btn-outline-danger" title="Delete" onClick={() => handleDelete(room)}>
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

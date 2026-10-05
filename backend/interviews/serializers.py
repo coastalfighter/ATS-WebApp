@@ -9,12 +9,10 @@ class ZoomAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = ZoomAccount
         fields = [
-            'id', 'room_name', 'account_id', 'client_id', 'client_secret',
-            'is_active', 'last_used_at', 'active_meetings', 'created_at',
+            'id', 'room_number', 'room_name', 'zoom_email',
+            'personal_meeting_link', 'is_active', 'notes',
+            'last_used_at', 'active_meetings', 'created_at',
         ]
-        extra_kwargs = {
-            'client_secret': {'write_only': True},
-        }
 
     def get_active_meetings(self, obj):
         return obj.interviews.filter(status='scheduled').count()
@@ -25,7 +23,11 @@ class ZoomAccountListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ZoomAccount
-        fields = ['id', 'room_name', 'is_active', 'last_used_at', 'active_meetings']
+        fields = [
+            'id', 'room_number', 'room_name', 'zoom_email',
+            'personal_meeting_link', 'is_active', 'notes',
+            'last_used_at', 'active_meetings',
+        ]
 
     def get_active_meetings(self, obj):
         return obj.interviews.filter(status='scheduled').count()

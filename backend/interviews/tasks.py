@@ -38,32 +38,41 @@ def send_interview_reminder_email(self, interview_id):
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def create_zoom_meeting_task(self, interview_id):
-    from .models import Interview
-    from .services.zoom_service import ZoomService
+    from datetime import timedelta
+    from django.db.models import Q
+    from .models import Interview, ZoomAccount
     from candidates.models import CandidateActivityLog
     from candidates.constants import ACTION_ZOOM_MEETING_CREATED
 
     interview = Interview.objects.select_related('candidate', 'zoom_account').get(id=interview_id)
-    zoom_account = interview.zoom_account or ZoomService.get_next_available_room()
-    zoom_data = ZoomService.create_meeting(
-        topic=f"{interview.get_interview_type_display()} - {interview.candidate.full_name}",
-        start_time=interview.scheduled_at,
-        duration_minutes=interview.duration_minutes,
-        agenda=interview.notes,
-        zoom_account=zoom_account,
-    )
-    if zoom_data:
-        interview.zoom_meeting_id = zoom_data['meeting_id']
-        interview.zoom_join_url = zoom_data['join_url']
-        interview.zoom_start_url = zoom_data['start_url']
-        interview.zoom_account = zoom_data.get('zoom_account')
-        interview.save(update_fields=[
-            'zoom_meeting_id', 'zoom_join_url', 'zoom_start_url', 'zoom_account',
-        ])
+
+    if interview.zoom_account and interview.zoom_account.personal_meeting_link:
+        room = interview.zoom_account
+    else:
+        slot_start = interview.scheduled_at
+        slot_end = slot_start + timedelta(minutes=interview.duration_minutes)
+        busy_room_ids = Interview.objects.filter(
+            status='scheduled',
+            zoom_account__isnull=False,
+            scheduled_at__lt=slot_end,
+            scheduled_at__gt=slot_start - timedelta(minutes=120),
+        ).exclude(id=interview.id).values_list('zoom_account_id', flat=True)
+        room = ZoomAccount.objects.filter(
+            is_active=True,
+            personal_meeting_link__gt='',
+        ).exclude(id__in=busy_room_ids).order_by('last_used_at').first()
+
+    if room and room.personal_meeting_link:
+        interview.zoom_join_url = room.personal_meeting_link
+        interview.zoom_account = room
+        interview.save(update_fields=['zoom_join_url', 'zoom_account'])
+        from django.utils import timezone
+        room.last_used_at = timezone.now()
+        room.save(update_fields=['last_used_at'])
         CandidateActivityLog.objects.create(
             candidate=interview.candidate,
             action_type=ACTION_ZOOM_MEETING_CREATED,
-            new_value=zoom_data['join_url'],
+            new_value=room.personal_meeting_link,
             performed_by=interview.created_by,
         )
 
@@ -98,17 +107,10 @@ def create_calendar_event_task(self, interview_id):
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def update_zoom_meeting_task(self, interview_id):
     from .models import Interview
-    from .services.zoom_service import ZoomService
-
-    interview = Interview.objects.select_related('candidate', 'zoom_account').get(id=interview_id)
-    if interview.zoom_meeting_id:
-        ZoomService.update_meeting(
-            meeting_id=interview.zoom_meeting_id,
-            topic=f"{interview.get_interview_type_display()} - {interview.candidate.full_name}",
-            start_time=interview.scheduled_at,
-            duration_minutes=interview.duration_minutes,
-            zoom_account=interview.zoom_account,
-        )
+    interview = Interview.objects.select_related('zoom_account').get(id=interview_id)
+    if interview.zoom_account and interview.zoom_account.personal_meeting_link:
+        interview.zoom_join_url = interview.zoom_account.personal_meeting_link
+        interview.save(update_fields=['zoom_join_url'])
 
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
@@ -128,16 +130,7 @@ def update_calendar_event_task(self, interview_id):
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def delete_zoom_meeting_task(self, meeting_id, zoom_account_id=None):
-    from .models import ZoomAccount
-    from .services.zoom_service import ZoomService
-
-    zoom_account = None
-    if zoom_account_id:
-        try:
-            zoom_account = ZoomAccount.objects.get(id=zoom_account_id)
-        except ZoomAccount.DoesNotExist:
-            pass
-    ZoomService.delete_meeting(meeting_id, zoom_account=zoom_account)
+    pass
 
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)

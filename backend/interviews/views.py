@@ -16,7 +16,6 @@ from .serializers import (
     InterviewFeedbackSerializer, InterviewFeedbackCreateSerializer,
     ObservationSheetSerializer, ObservationSheetCreateSerializer,
 )
-from .services.zoom_service import ZoomService
 from .tasks import (
     create_zoom_meeting_task, create_calendar_event_task,
     send_interview_confirmation_email, send_interview_cancellation_email,
@@ -135,23 +134,6 @@ class ZoomAccountViewSet(viewsets.ModelViewSet):
         room.is_active = not room.is_active
         room.save(update_fields=['is_active'])
         return Response(ZoomAccountSerializer(room).data)
-
-    @action(detail=True, methods=['post'])
-    def test_connection(self, request, pk=None):
-        room = self.get_object()
-        try:
-            token = ZoomService._get_access_token_for_account(room)
-            if token:
-                return Response({'status': 'connected', 'detail': 'Zoom account connected successfully.'})
-            return Response(
-                {'status': 'failed', 'detail': 'Could not obtain access token.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Exception as e:
-            return Response(
-                {'status': 'failed', 'detail': str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
 
 class LocationViewSet(viewsets.ModelViewSet):

@@ -155,7 +155,6 @@ export const zoomRoomsAPI = {
   update: (id, data) => api.patch(`/interviews/zoom-rooms/${id}/`, data),
   delete: (id) => api.delete(`/interviews/zoom-rooms/${id}/`),
   toggleActive: (id) => api.post(`/interviews/zoom-rooms/${id}/toggle_active/`),
-  testConnection: (id) => api.post(`/interviews/zoom-rooms/${id}/test_connection/`),
 };
 
 export const locationsAPI = {
