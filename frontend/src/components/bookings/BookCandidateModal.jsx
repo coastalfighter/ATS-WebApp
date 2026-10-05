@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { interviewSlotsAPI, bookingsAPI } from '../../services/api';
+import { interviewSlotsAPI, bookingsAPI, locationsAPI } from '../../services/api';
 import AlertMessage from '../common/AlertMessage';
 
 export default function BookCandidateModal({ show, onClose, candidate, onBooked }) {
   const [slots, setSlots] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -11,21 +12,33 @@ export default function BookCandidateModal({ show, onClose, candidate, onBooked 
   const [selectedSlot, setSelectedSlot] = useState('');
   const [round, setRound] = useState('round_1');
   const [dateFilter, setDateFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
 
   useEffect(() => {
     if (show) {
+      fetchLocations();
       fetchSlots();
       setSelectedSlot('');
       setError('');
       setSuccess('');
     }
-  }, [show, dateFilter]);
+  }, [show, dateFilter, locationFilter]);
+
+  const fetchLocations = async () => {
+    try {
+      const { data } = await locationsAPI.list({ active_only: 'true' });
+      setLocations(Array.isArray(data) ? data : data.results || []);
+    } catch {
+      // silently fail
+    }
+  };
 
   const fetchSlots = async () => {
     setLoading(true);
     try {
       const params = { active_only: 'true' };
       if (dateFilter) params.date_from = dateFilter;
+      if (locationFilter) params.location = locationFilter;
       const { data } = await interviewSlotsAPI.list(params);
       const available = (data.results || data).filter(
         s => s.status !== 'fully_booked' && s.status !== 'cancelled'
@@ -103,8 +116,21 @@ export default function BookCandidateModal({ show, onClose, candidate, onBooked 
                     <option value="round_2">Round 2</option>
                   </select>
                 </div>
-                <div className="col-md-6">
-                  <label className="form-label">Filter by Date (from)</label>
+                <div className="col-md-3">
+                  <label className="form-label">Location</label>
+                  <select
+                    className="form-select"
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                  >
+                    <option value="">All Locations</option>
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.id}>{loc.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Date (from)</label>
                   <input
                     type="date"
                     className="form-control"

@@ -38,6 +38,27 @@ const pipelineStatuses = [
   'joined', 'dropped', 'hired', 'fastgem_uploaded',
 ];
 
+const VALID_PIPELINE_TRANSITIONS = {
+  interested: ['screening_scheduled', 'rejected', 'dropped'],
+  screening_scheduled: ['screening_completed', 'rejected', 'dropped'],
+  screening_completed: ['interview_scheduled', 'rejected', 'dropped'],
+  interview_scheduled: ['interview_completed', 'rejected', 'dropped'],
+  interview_completed: ['round2_scheduled', 'submitted', 'rejected', 'dropped'],
+  round2_scheduled: ['round2_completed', 'rejected', 'dropped'],
+  round2_completed: ['observation', 'submitted', 'rejected', 'dropped'],
+  observation: ['training', 'rejected', 'dropped'],
+  training: ['training_completed', 'rejected', 'dropped'],
+  training_completed: ['submitted', 'rejected', 'dropped'],
+  submitted: ['selected', 'rejected', 'dropped'],
+  selected: ['offer_released', 'rejected', 'dropped'],
+  offer_released: ['joined', 'dropped'],
+  joined: ['hired'],
+  hired: ['fastgem_uploaded'],
+  fastgem_uploaded: [],
+  rejected: [],
+  dropped: [],
+};
+
 export default function PipelineCandidatesPage() {
   const navigate = useNavigate();
   const [candidates, setCandidates] = useState([]);
@@ -335,8 +356,10 @@ export default function PipelineCandidatesPage() {
                       <select className="bk-inline-select"
                         value={c.current_status}
                         onChange={(e) => handleInlineStatus(c.id, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}>
-                        {pipelineStatuses.map((s) => (
+                        onClick={(e) => e.stopPropagation()}
+                        disabled={(VALID_PIPELINE_TRANSITIONS[c.current_status] || []).length === 0}>
+                        <option value={c.current_status}>{STATUS_LABELS[c.current_status]}</option>
+                        {(VALID_PIPELINE_TRANSITIONS[c.current_status] || []).map((s) => (
                           <option key={s} value={s}>{STATUS_LABELS[s]}</option>
                         ))}
                       </select>

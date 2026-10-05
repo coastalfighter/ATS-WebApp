@@ -161,12 +161,13 @@ export default function InterviewsPage() {
                   <th>Duration</th>
                   <th>Status</th>
                   <th>Zoom</th>
+                  <th>Calendar</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {interviews.length === 0 ? (
-                  <tr><td colSpan="8" className="text-center text-muted py-4">No interviews found.</td></tr>
+                  <tr><td colSpan="9" className="text-center text-muted py-4">No interviews found.</td></tr>
                 ) : interviews.map((iv) => (
                   <tr key={iv.id}>
                     <td className="cursor-pointer" onClick={() => navigate(`/candidates/${iv.candidate}`)}>
@@ -182,6 +183,17 @@ export default function InterviewsPage() {
                       </span>
                     </td>
                     <td>{iv.zoom_join_url ? <a href={iv.zoom_join_url} target="_blank" rel="noreferrer">Join</a> : '-'}</td>
+                    <td>
+                      {iv.google_event_id ? (
+                        <span className="badge bg-success" title="Google Calendar event synced">
+                          <i className="bi bi-calendar-check me-1"></i>Synced
+                        </span>
+                      ) : (
+                        <span className="badge bg-secondary" title="No calendar event">
+                          <i className="bi bi-calendar-x me-1"></i>None
+                        </span>
+                      )}
+                    </td>
                     <td>
                       {iv.status === 'scheduled' && (
                         <div className="d-flex gap-1">

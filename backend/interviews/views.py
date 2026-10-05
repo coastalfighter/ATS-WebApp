@@ -1,4 +1,5 @@
 import logging
+from django.db.models import F
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -271,8 +272,10 @@ class InterviewSlotViewSet(viewsets.ModelViewSet):
                 {'detail': 'Slot is fully booked.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        slot.booked_count += 1
-        slot.save(update_fields=['booked_count'])
+        InterviewSlot.objects.filter(pk=slot.pk).update(
+            booked_count=F('booked_count') + 1
+        )
+        slot.refresh_from_db()
         slot.refresh_status()
         return Response(InterviewSlotSerializer(slot).data)
 
@@ -284,8 +287,10 @@ class InterviewSlotViewSet(viewsets.ModelViewSet):
                 {'detail': 'No bookings to remove.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        slot.booked_count -= 1
-        slot.save(update_fields=['booked_count'])
+        InterviewSlot.objects.filter(pk=slot.pk).update(
+            booked_count=F('booked_count') - 1
+        )
+        slot.refresh_from_db()
         slot.refresh_status()
         return Response(InterviewSlotSerializer(slot).data)
 
@@ -312,7 +317,38 @@ class InterviewFeedbackViewSet(viewsets.ModelViewSet):
         return InterviewFeedbackSerializer
 
     def perform_create(self, serializer):
-        serializer.save(submitted_by=self.request.user)
+        feedback = serializer.save(submitted_by=self.request.user)
+        self._auto_transition_candidate(feedback)
+
+    def _auto_transition_candidate(self, feedback):
+        from candidates.constants import (
+            PIPELINE_INTERVIEW_COMPLETED, PIPELINE_SELECTED,
+            PIPELINE_REJECTED, PIPELINE_ROUND2_COMPLETED,
+            PIPELINE_ROUND2_SCHEDULED, VALID_PIPELINE_TRANSITIONS,
+        )
+        candidate = feedback.interview.candidate
+        rec = feedback.recommendation
+
+        target = None
+        if rec == 'hire':
+            target = PIPELINE_SELECTED
+        elif rec == 'reject':
+            target = PIPELINE_REJECTED
+        elif rec == 'next_round':
+            target = PIPELINE_ROUND2_SCHEDULED
+
+        if target and target in VALID_PIPELINE_TRANSITIONS.get(candidate.current_status, []):
+            old_status = candidate.current_status
+            candidate.current_status = target
+            candidate.save(update_fields=['current_status', 'updated_at'])
+            from candidates.models import CandidateActivityLog
+            CandidateActivityLog.objects.create(
+                candidate=candidate,
+                action='status_changed',
+                old_value=old_status,
+                new_value=target,
+                performed_by=self.request.user,
+            )
 
 
 class ObservationSheetViewSet(viewsets.ModelViewSet):

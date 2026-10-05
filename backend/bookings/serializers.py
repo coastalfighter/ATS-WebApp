@@ -1,3 +1,4 @@
+from django.db.models import F
 from rest_framework import serializers
 from .models import Booking, BookingActivityLog
 
@@ -76,9 +77,11 @@ class BookingCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         booking = super().create(validated_data)
-        slot = booking.interview_slot
-        slot.booked_count += 1
-        slot.save(update_fields=['booked_count'])
+        from interviews.models import InterviewSlot
+        InterviewSlot.objects.filter(pk=booking.interview_slot_id).update(
+            booked_count=F('booked_count') + 1
+        )
+        slot = InterviewSlot.objects.get(pk=booking.interview_slot_id)
         slot.refresh_status()
         return booking
 
