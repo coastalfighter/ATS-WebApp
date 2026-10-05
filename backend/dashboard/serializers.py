@@ -22,8 +22,8 @@ class WeeklyBookingGoalSerializer(serializers.ModelSerializer):
 
 
 class BulkGoalItemSerializer(serializers.Serializer):
-    location = serializers.IntegerField()
-    recruiter = serializers.IntegerField(required=False, allow_null=True)
+    location = serializers.CharField()
+    recruiter = serializers.CharField(required=False, allow_null=True)
     goal = serializers.IntegerField(min_value=0)
 
 

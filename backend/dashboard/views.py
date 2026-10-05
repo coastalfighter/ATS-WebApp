@@ -342,9 +342,11 @@ class WeeklyBookingGoalView(APIView):
         created_count = 0
 
         for item in goals_data:
+            recruiter_val = item.get('recruiter')
+            recruiter_id = recruiter_val if recruiter_val else None
             WeeklyBookingGoal.objects.update_or_create(
                 location_id=item['location'],
-                recruiter_id=item.get('recruiter'),
+                recruiter_id=recruiter_id,
                 week_start=week_start,
                 defaults={
                     'goal': item['goal'],

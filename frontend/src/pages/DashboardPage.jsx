@@ -240,15 +240,17 @@ export default function DashboardPage() {
       const payload = {
         week_start: goalsWeek,
         goals: goalFormRows.filter(r => r.location && r.goal > 0).map(r => ({
-          location: parseInt(r.location),
-          recruiter: r.recruiter ? parseInt(r.recruiter) : null,
-          goal: parseInt(r.goal),
+          location: String(r.location),
+          recruiter: r.recruiter ? String(r.recruiter) : null,
+          goal: parseInt(r.goal) || 0,
         })),
       };
       await dashboardAPI.setBookingGoals(payload);
       setShowGoalForm(false);
       loadBookingGoals(goalsWeek);
-    } catch { /* ignore */ }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to save goals.');
+    }
     setGoalSaving(false);
   };
 
