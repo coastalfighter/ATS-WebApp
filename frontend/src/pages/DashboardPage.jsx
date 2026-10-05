@@ -182,7 +182,7 @@ export default function DashboardPage() {
     reportsAPI.kpiAttainment()
       .then(({ data: result }) => {
         if (!isAdminOrSubadmin) {
-          const myKpi = result.find(r => r.recruiter_id === user?.id);
+          const myKpi = result.find(r => String(r.recruiter_id) === String(user?.id));
           setKpiData(myKpi ? [myKpi] : []);
         } else {
           setKpiData(result);
