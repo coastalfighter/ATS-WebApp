@@ -27,9 +27,9 @@ class RecruiterDashboardView(APIView):
     def get(self, request):
         user = request.user
         if user.role == 'recruiter':
-            candidates = Candidate.objects.filter(assigned_recruiter=user)
+            candidates = Candidate.objects.filter(assigned_recruiter=user, is_migrated=False)
         else:
-            candidates = Candidate.objects.all()
+            candidates = Candidate.objects.filter(is_migrated=False)
 
         today = timezone.now().date()
 
@@ -98,9 +98,10 @@ class AdminDashboardView(APIView):
         else:
             end_date = today
 
-        total = Candidate.objects.count()
-        fresh = Candidate.objects.filter(current_bucket=BUCKET_FRESH).count()
-        pipeline = Candidate.objects.filter(current_bucket=BUCKET_PIPELINE).count()
+        fresh_qs = Candidate.objects.filter(is_migrated=False)
+        total = fresh_qs.count()
+        fresh = fresh_qs.filter(current_bucket=BUCKET_FRESH).count()
+        pipeline = fresh_qs.filter(current_bucket=BUCKET_PIPELINE).count()
 
         bookings_in_range = Interview.objects.filter(
             scheduled_at__date__gte=start_date,
@@ -108,7 +109,7 @@ class AdminDashboardView(APIView):
             status='scheduled',
         ).count()
 
-        leads_in_range = Candidate.objects.filter(
+        leads_in_range = fresh_qs.filter(
             created_at__date__gte=start_date,
             created_at__date__lte=end_date,
         ).count()
@@ -169,7 +170,7 @@ class AdminDashboardView(APIView):
             }
 
         daily_leads = list(
-            Candidate.objects.filter(
+            fresh_qs.filter(
                 created_at__date__gte=start_date,
                 created_at__date__lte=end_date,
             )
@@ -205,13 +206,13 @@ class AdminDashboardView(APIView):
             current += timedelta(days=1)
 
         status_breakdown = list(
-            Candidate.objects.values('current_status')
+            fresh_qs.values('current_status')
             .annotate(count=Count('id'))
             .order_by('-count')
         )
 
         recruiter_stats = list(
-            Candidate.objects.filter(assigned_recruiter__isnull=False)
+            fresh_qs.filter(assigned_recruiter__isnull=False)
             .values('assigned_recruiter__first_name', 'assigned_recruiter__last_name', 'assigned_recruiter__id')
             .annotate(
                 total=Count('id'),

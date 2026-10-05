@@ -26,7 +26,7 @@ class RecruiterWiseReportView(APIView):
 
     def get(self, request):
         data = (
-            Candidate.objects.filter(assigned_recruiter__isnull=False)
+            Candidate.objects.filter(assigned_recruiter__isnull=False, is_migrated=False)
             .values('assigned_recruiter__id', 'assigned_recruiter__first_name', 'assigned_recruiter__last_name')
             .annotate(
                 total=Count('id'),
@@ -44,9 +44,10 @@ class ContactedVsUncontactedReportView(APIView):
     permission_classes = [IsAdminOrSubadmin]
 
     def get(self, request):
-        total = Candidate.objects.count()
-        contacted = Candidate.objects.exclude(current_status=FRESH_NEVER_CONTACTED).count()
-        uncontacted = Candidate.objects.filter(current_status=FRESH_NEVER_CONTACTED).count()
+        qs = Candidate.objects.filter(is_migrated=False)
+        total = qs.count()
+        contacted = qs.exclude(current_status=FRESH_NEVER_CONTACTED).count()
+        uncontacted = qs.filter(current_status=FRESH_NEVER_CONTACTED).count()
         return Response({
             'total': total,
             'contacted': contacted,
@@ -58,8 +59,8 @@ class FreshToPipelineReportView(APIView):
     permission_classes = [IsAdminOrSubadmin]
 
     def get(self, request):
-        fresh_total = Candidate.objects.filter(current_bucket=BUCKET_FRESH).count()
-        pipeline_total = Candidate.objects.filter(current_bucket=BUCKET_PIPELINE).count()
+        fresh_total = Candidate.objects.filter(current_bucket=BUCKET_FRESH, is_migrated=False).count()
+        pipeline_total = Candidate.objects.filter(current_bucket=BUCKET_PIPELINE, is_migrated=False).count()
         conversions = CandidateActivityLog.objects.filter(
             action_type=ACTION_STATUS_CHANGED,
             new_value=PIPELINE_INTERESTED,
@@ -81,7 +82,7 @@ class NegativeBreakdownReportView(APIView):
             FRESH_INVALID_CONTACT, FRESH_DO_NOT_CONTACT, FRESH_DUPLICATE,
         ]
         data = (
-            Candidate.objects.filter(current_status__in=negative_statuses)
+            Candidate.objects.filter(current_status__in=negative_statuses, is_migrated=False)
             .values('current_status')
             .annotate(count=Count('id'))
             .order_by('-count')
@@ -97,6 +98,7 @@ class FollowUpPendingReportView(APIView):
         qs = Candidate.objects.filter(
             follow_up_date__isnull=False,
             follow_up_date__lte=today,
+            is_migrated=False,
         )
         if request.user.role == 'recruiter':
             qs = qs.filter(assigned_recruiter=request.user)
@@ -110,7 +112,7 @@ class PipelineStagesReportView(APIView):
 
     def get(self, request):
         data = (
-            Candidate.objects.filter(current_bucket=BUCKET_PIPELINE)
+            Candidate.objects.filter(current_bucket=BUCKET_PIPELINE, is_migrated=False)
             .values('current_status')
             .annotate(count=Count('id'))
             .order_by('current_status')
@@ -132,7 +134,8 @@ class DuplicateReportView(APIView):
 
     def get(self, request):
         dup_emails = (
-            Candidate.objects.values('email')
+            Candidate.objects.filter(is_migrated=False)
+            .values('email')
             .annotate(cnt=Count('id'))
             .filter(cnt__gt=1)
         )
@@ -153,7 +156,7 @@ class DailyTrendsReportView(APIView):
         start_date = timezone.now() - timezone.timedelta(days=days)
 
         daily = (
-            Candidate.objects.filter(created_at__gte=start_date)
+            Candidate.objects.filter(created_at__gte=start_date, is_migrated=False)
             .annotate(date=TruncDate('created_at'))
             .values('date')
             .annotate(count=Count('id'))
@@ -196,7 +199,7 @@ class ExportCandidatesCSVView(APIView):
             'Assigned Recruiter', 'Follow-up Date', 'Created At',
         ])
 
-        qs = Candidate.objects.select_related('assigned_recruiter').all()
+        qs = Candidate.objects.select_related('assigned_recruiter').filter(is_migrated=False)
 
         bucket = request.query_params.get('bucket')
         if bucket:
@@ -293,8 +296,8 @@ class BookingSummaryReportView(APIView):
             .order_by('-count')[:10]
         )
 
-        total_pipeline = Candidate.objects.filter(current_bucket=BUCKET_PIPELINE).count()
-        total_hired = Candidate.objects.filter(current_status=PIPELINE_HIRED).count()
+        total_pipeline = Candidate.objects.filter(current_bucket=BUCKET_PIPELINE, is_migrated=False).count()
+        total_hired = Candidate.objects.filter(current_status=PIPELINE_HIRED, is_migrated=False).count()
 
         return Response({
             'total_bookings': total_bookings,
@@ -315,10 +318,10 @@ class Round2SummaryReportView(APIView):
         from interviews.models import ObservationSheet
 
         round2_scheduled = Candidate.objects.filter(
-            current_status=PIPELINE_ROUND2_SCHEDULED
+            current_status=PIPELINE_ROUND2_SCHEDULED, is_migrated=False
         ).count()
         round2_completed = Candidate.objects.filter(
-            current_status=PIPELINE_ROUND2_COMPLETED
+            current_status=PIPELINE_ROUND2_COMPLETED, is_migrated=False
         ).count()
         round2_rejected = CandidateActivityLog.objects.filter(
             action_type=ACTION_STATUS_CHANGED,

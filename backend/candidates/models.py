@@ -89,6 +89,7 @@ class Candidate(models.Model):
         null=True, blank=True, related_name='updated_candidates'
     )
     is_deleted = models.BooleanField(default=False, db_index=True)
+    is_migrated = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         ordering = ['-created_at']

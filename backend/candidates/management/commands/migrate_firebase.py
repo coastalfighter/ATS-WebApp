@@ -493,6 +493,7 @@ class Command(BaseCommand):
                     current_status=status,
                     assigned_recruiter_id=recruiter_id,
                     notes=(lead.get('notes') or '')[:5000],
+                    is_migrated=True,
                 )
                 obj.save()
 
@@ -554,6 +555,7 @@ class Command(BaseCommand):
                     current_status=status,
                     assigned_recruiter_id=recruiter_id,
                     notes=notes,
+                    is_migrated=True,
                 )
                 obj.save()
 
