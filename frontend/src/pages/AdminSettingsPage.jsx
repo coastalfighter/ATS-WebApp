@@ -5,19 +5,6 @@ import AlertMessage from '../components/common/AlertMessage';
 
 const INTEGRATION_GROUPS = [
   {
-    key: 'zoom',
-    label: 'Zoom Meeting',
-    icon: 'bi-camera-video-fill',
-    color: '#2D8CFF',
-    description: 'Server-to-Server OAuth for automatic Zoom meeting creation',
-    fields: [
-      { key: 'zoom_account_id', label: 'Account ID', type: 'text', placeholder: 'Your Zoom Account ID' },
-      { key: 'zoom_client_id', label: 'Client ID', type: 'text', placeholder: 'OAuth App Client ID' },
-      { key: 'zoom_client_secret', label: 'Client Secret', type: 'password', placeholder: 'OAuth App Client Secret' },
-      { key: 'zoom_enabled', label: 'Enable Zoom Integration', type: 'toggle' },
-    ],
-  },
-  {
     key: 'google',
     label: 'Google Calendar',
     icon: 'bi-calendar-check-fill',
