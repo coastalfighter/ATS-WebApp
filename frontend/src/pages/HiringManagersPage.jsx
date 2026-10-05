@@ -54,6 +54,7 @@ export default function HiringManagersPage() {
   };
 
   const handleToggleActive = async (id) => {
+    setError(''); setSuccess('');
     try {
       await usersAPI.toggleActive(id);
       setSuccess('Status updated.');

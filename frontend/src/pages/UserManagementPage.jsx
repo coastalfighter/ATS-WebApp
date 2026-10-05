@@ -65,6 +65,7 @@ export default function UserManagementPage() {
   };
 
   const handleToggleActive = async (userId) => {
+    setError(''); setSuccess('');
     try {
       await usersAPI.toggleActive(userId);
       setSuccess('User status updated.');
@@ -76,6 +77,7 @@ export default function UserManagementPage() {
 
   const handleResetPassword = async () => {
     if (!resetPasswordData || !newPassword) return;
+    setError(''); setSuccess('');
     try {
       await usersAPI.resetPassword({
         user_id: resetPasswordData.id,

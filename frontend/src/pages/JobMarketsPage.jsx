@@ -61,23 +61,25 @@ export default function JobMarketsPage() {
   };
 
   const handleToggleActive = async (id) => {
+    setError(''); setSuccess('');
     try {
       await locationsAPI.toggleActive(id);
       setSuccess('Status updated.');
       fetchLocations();
-    } catch {
-      setError('Failed to update status.');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update status.');
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this job market?')) return;
+    if (!window.confirm('Delete this location?')) return;
+    setError(''); setSuccess('');
     try {
       await locationsAPI.delete(id);
-      setSuccess('Job market deleted.');
+      setSuccess('Location deleted.');
       fetchLocations();
-    } catch {
-      setError('Failed to delete.');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to delete.');
     }
   };
 
