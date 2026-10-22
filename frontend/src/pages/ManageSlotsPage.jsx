@@ -129,8 +129,8 @@ export default function ManageSlotsPage() {
     setSubmitting(true);
     try {
       const payload = {
-        location: Number(form.location),
-        hiring_manager: Number(form.hiring_manager),
+        location: form.location,
+        hiring_manager: form.hiring_manager,
         date: form.date,
         start_time: form.start_time,
         end_time: form.end_time,

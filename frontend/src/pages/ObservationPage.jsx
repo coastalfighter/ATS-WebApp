@@ -81,7 +81,7 @@ export default function ObservationPage() {
     try {
       await observationsAPI.create({
         ...form,
-        interview: Number(form.interview),
+        interview: form.interview,
         performance_score: Number(form.performance_score),
         communication_score: Number(form.communication_score),
         technical_score: Number(form.technical_score),

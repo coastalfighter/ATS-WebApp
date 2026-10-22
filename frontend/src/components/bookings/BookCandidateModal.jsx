@@ -63,7 +63,7 @@ export default function BookCandidateModal({ show, onClose, candidate, onBooked 
     try {
       await bookingsAPI.create({
         candidate: candidate.id,
-        interview_slot: parseInt(selectedSlot),
+        interview_slot: selectedSlot,
         round,
       });
       setSuccess('Candidate booked successfully!');

@@ -275,7 +275,7 @@ export default function CandidateDetailPage() {
     if (!selectedTrainer) return;
     setTrainerSubmitting(true);
     try {
-      await candidatesAPI.assignTrainer(candidate.id, { trainer_id: parseInt(selectedTrainer) });
+      await candidatesAPI.assignTrainer(candidate.id, { trainer_id: selectedTrainer });
       await loadCandidate();
       setShowTrainerModal(false);
       setSelectedTrainer('');
@@ -328,7 +328,7 @@ export default function CandidateDetailPage() {
     if (!selectedRecruiter) return;
     setError(''); setSuccess('');
     try {
-      const { data } = await candidatesAPI.reassign(id, { recruiter_id: parseInt(selectedRecruiter) });
+      const { data } = await candidatesAPI.reassign(id, { recruiter_id: selectedRecruiter });
       setCandidate(data);
       setSelectedRecruiter('');
       setSuccess('Candidate reassigned.');
@@ -376,7 +376,7 @@ export default function CandidateDetailPage() {
     e.preventDefault();
     setError('');
     try {
-      await interviewsAPI.create({ ...interviewForm, candidate: parseInt(id) });
+      await interviewsAPI.create({ ...interviewForm, candidate: id });
       setShowInterviewForm(false);
       setInterviewForm({
         interviewer_name: '', interviewer_email: '', interview_type: 'screening',

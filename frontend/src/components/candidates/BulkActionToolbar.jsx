@@ -50,7 +50,7 @@ export default function BulkActionToolbar({ selectedIds, onComplete, bucket }) {
       } else if (action === 'reassign' && recruiterId) {
         const { data } = await candidatesAPI.bulkReassign({
           candidate_ids: selectedIds,
-          recruiter_id: parseInt(recruiterId),
+          recruiter_id: recruiterId,
         });
         setResult(`Reassigned ${data.reassigned} candidates.`);
       } else if (action === 'delete') {
