@@ -96,6 +96,8 @@ class CandidateCreateSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {
             'assigned_recruiter': {'required': False, 'allow_null': True},
+            'date_of_birth': {'required': False, 'allow_null': True},
+            'experience_years': {'required': False, 'allow_null': True},
         }
 
     def validate_phone(self, value):
@@ -114,6 +116,11 @@ class CandidateUpdateSerializer(serializers.ModelSerializer):
             'job_market', 'notes', 'follow_up_date',
             'date_of_birth', 'experience_years', 'current_company', 'current_designation',
         ]
+        extra_kwargs = {
+            'date_of_birth': {'required': False, 'allow_null': True},
+            'experience_years': {'required': False, 'allow_null': True},
+            'follow_up_date': {'required': False, 'allow_null': True},
+        }
 
     def validate_phone(self, value):
         return validate_phone_number(value, 'phone')

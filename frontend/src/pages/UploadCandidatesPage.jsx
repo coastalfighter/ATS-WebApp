@@ -115,6 +115,11 @@ export default function UploadCandidatesPage() {
       } else {
         payload.assigned_recruiter = Number(payload.assigned_recruiter);
       }
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === '' || payload[key] === null || payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
       await candidatesAPI.create(payload);
       setFormSuccess(`${form.first_name} ${form.last_name} added successfully.`);
       setForm(INITIAL_FORM);
