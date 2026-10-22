@@ -41,6 +41,7 @@ export default function FreshCandidatesPage() {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
@@ -117,17 +118,34 @@ export default function FreshCandidatesPage() {
 
   const handleConvert = async (candidate) => {
     if (convertingId) return;
+    const name = `${candidate.first_name} ${candidate.last_name}`;
+    if (!window.confirm(`Convert "${name}" to Pipeline? This will move them to Booked Candidates.`)) return;
     setConvertingId(candidate.id);
+    setError('');
+    setSuccess('');
     try {
       await candidatesAPI.updateStatus(candidate.id, {
         status: 'interested',
         remarks: 'Converted to pipeline',
         is_admin_override: false,
       });
+      setSuccess(`"${name}" has been converted to Pipeline. View them in Booked Candidates.`);
       loadCandidates();
       loadSummary();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to convert candidate.');
+      const data = err.response?.data;
+      if (data) {
+        if (typeof data === 'string') {
+          setError(data);
+        } else if (data.detail) {
+          setError(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail));
+        } else {
+          const msgs = Object.entries(data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`);
+          setError(msgs.join(' | '));
+        }
+      } else {
+        setError('Failed to convert candidate. Please try again.');
+      }
     } finally {
       setConvertingId(null);
     }
@@ -192,6 +210,7 @@ export default function FreshCandidatesPage() {
         <p className="fl-subtitle">Recruiter calling and lead qualification</p>
       </div>
 
+      <AlertMessage type="success" message={success} onClose={() => setSuccess('')} />
       <AlertMessage message={error} onClose={() => setError('')} />
 
       {/* Master Data Section */}

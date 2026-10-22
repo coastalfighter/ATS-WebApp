@@ -64,6 +64,7 @@ export default function PipelineCandidatesPage() {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [page, setPage] = useState(1);
   const [count, setCount] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
@@ -141,16 +142,31 @@ export default function PipelineCandidatesPage() {
   };
 
   const handleInlineStatus = async (candidateId, newStatus) => {
+    setError('');
+    setSuccess('');
     try {
       await candidatesAPI.updateStatus(candidateId, {
         status: newStatus,
         remarks: '',
         is_admin_override: false,
       });
+      setSuccess(`Status updated to "${STATUS_LABELS[newStatus] || newStatus}".`);
       loadCandidates();
       loadSummary();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to update status.');
+      const data = err.response?.data;
+      if (data) {
+        if (typeof data === 'string') {
+          setError(data);
+        } else if (data.detail) {
+          setError(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail));
+        } else {
+          const msgs = Object.entries(data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`);
+          setError(msgs.join(' | '));
+        }
+      } else {
+        setError('Failed to update status. Please try again.');
+      }
     }
   };
 
@@ -220,6 +236,7 @@ export default function PipelineCandidatesPage() {
         <p className="fl-subtitle">Candidates in the interview pipeline</p>
       </div>
 
+      <AlertMessage type="success" message={success} onClose={() => setSuccess('')} />
       <AlertMessage message={error} onClose={() => setError('')} />
 
       {/* Master Data Section */}
