@@ -119,8 +119,22 @@ export default function UploadCandidatesPage() {
       setFormSuccess(`${form.first_name} ${form.last_name} added successfully.`);
       setForm(INITIAL_FORM);
     } catch (err) {
-      const detail = err.response?.data?.detail || err.response?.data?.email?.[0] || 'Failed to add candidate.';
-      setFormError(typeof detail === 'string' ? detail : JSON.stringify(detail));
+      const data = err.response?.data;
+      if (data) {
+        if (typeof data === 'string') {
+          setFormError(data);
+        } else if (data.detail) {
+          setFormError(typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail));
+        } else {
+          const msgs = Object.entries(data).map(([k, v]) => {
+            const val = Array.isArray(v) ? v.join(', ') : v;
+            return `${k}: ${val}`;
+          });
+          setFormError(msgs.join(' | '));
+        }
+      } else {
+        setFormError('Failed to add candidate.');
+      }
     } finally {
       setSubmitting(false);
     }

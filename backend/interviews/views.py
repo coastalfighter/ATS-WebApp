@@ -62,15 +62,21 @@ class InterviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         interview = serializer.save(created_by=self.request.user)
-        create_zoom_meeting_task.delay(interview.id)
-        create_calendar_event_task.delay(interview.id)
-        send_interview_confirmation_email.delay(interview.id)
+        try:
+            create_zoom_meeting_task.delay(interview.id)
+            create_calendar_event_task.delay(interview.id)
+            send_interview_confirmation_email.delay(interview.id)
+        except Exception:
+            logger.warning(f'Failed to queue async tasks for interview {interview.id} (Redis/Celery unavailable)')
 
     def perform_update(self, serializer):
         interview = serializer.save()
-        update_zoom_meeting_task.delay(interview.id)
-        update_calendar_event_task.delay(interview.id)
-        send_interview_reschedule_email.delay(interview.id)
+        try:
+            update_zoom_meeting_task.delay(interview.id)
+            update_calendar_event_task.delay(interview.id)
+            send_interview_reschedule_email.delay(interview.id)
+        except Exception:
+            logger.warning(f'Failed to queue async tasks for interview {interview.id} (Redis/Celery unavailable)')
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
@@ -78,15 +84,18 @@ class InterviewViewSet(viewsets.ModelViewSet):
         interview.status = 'cancelled'
         interview.save(update_fields=['status', 'updated_at'])
 
-        if interview.zoom_meeting_id:
-            delete_zoom_meeting_task.delay(
-                interview.zoom_meeting_id,
-                zoom_account_id=interview.zoom_account_id,
-            )
-        if interview.google_event_id:
-            delete_calendar_event_task.delay(interview.google_event_id)
+        try:
+            if interview.zoom_meeting_id:
+                delete_zoom_meeting_task.delay(
+                    interview.zoom_meeting_id,
+                    zoom_account_id=interview.zoom_account_id,
+                )
+            if interview.google_event_id:
+                delete_calendar_event_task.delay(interview.google_event_id)
+            send_interview_cancellation_email.delay(interview.id)
+        except Exception:
+            logger.warning(f'Failed to queue cancellation tasks for interview {interview.id} (Redis/Celery unavailable)')
 
-        send_interview_cancellation_email.delay(interview.id)
         return Response(InterviewSerializer(interview).data)
 
     @action(detail=True, methods=['post'])
@@ -97,7 +106,11 @@ class InterviewViewSet(viewsets.ModelViewSet):
                 {'detail': 'Can only send reminders for scheduled interviews.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        send_interview_reminder_email.delay(interview.id)
+        try:
+            send_interview_reminder_email.delay(interview.id)
+        except Exception:
+            logger.warning(f'Failed to queue reminder for interview {interview.id} (Redis/Celery unavailable)')
+            return Response({'detail': 'Email service temporarily unavailable. Reminder not sent.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response({'detail': 'Reminder queued for sending.'})
 
 

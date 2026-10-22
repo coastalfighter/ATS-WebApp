@@ -174,20 +174,23 @@ class ForgotPasswordView(APIView):
         token = default_token_generator.make_token(user)
         reset_url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}"
 
-        from interviews.tasks import send_generic_email
-        send_generic_email.delay(
-            recipient=user.email,
-            subject='Password Reset - ATS System',
-            body=(
-                f'Dear {user.get_full_name()},\n\n'
-                f'You requested a password reset. Click the link below to set a new password:\n\n'
-                f'{reset_url}\n\n'
-                f'This link will expire in 24 hours.\n\n'
-                f'If you did not request this, please ignore this email.\n\n'
-                f'Best regards,\nATS System'
-            ),
-            email_type='password_reset',
-        )
+        try:
+            from interviews.tasks import send_generic_email
+            send_generic_email.delay(
+                recipient=user.email,
+                subject='Password Reset - ATS System',
+                body=(
+                    f'Dear {user.get_full_name()},\n\n'
+                    f'You requested a password reset. Click the link below to set a new password:\n\n'
+                    f'{reset_url}\n\n'
+                    f'This link will expire in 24 hours.\n\n'
+                    f'If you did not request this, please ignore this email.\n\n'
+                    f'Best regards,\nATS System'
+                ),
+                email_type='password_reset',
+            )
+        except Exception:
+            logger.warning(f'Failed to queue password reset email for {user.email} (Redis/Celery unavailable)')
 
         return Response({'detail': 'If an account with that email exists, a reset link has been sent.'})
 

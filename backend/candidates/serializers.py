@@ -12,7 +12,7 @@ def validate_phone_number(value, field_name='phone'):
     if not value:
         return value
     try:
-        parsed = phonenumbers.parse(value, 'IN')
+        parsed = phonenumbers.parse(value, 'US')
         if not phonenumbers.is_valid_number(parsed):
             raise serializers.ValidationError({field_name: 'Invalid phone number.'})
         return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)

@@ -39,6 +39,9 @@ class NotificationService:
             recipient, title, message, category, link
         )
         if notification and NotificationService.should_email(recipient, event_type):
-            from .tasks import send_notification_email
-            send_notification_email.delay(notification.id)
+            try:
+                from .tasks import send_notification_email
+                send_notification_email.delay(notification.id)
+            except Exception:
+                logger.warning(f'Failed to queue notification email for notification {notification.id} (Redis/Celery unavailable)')
         return notification
