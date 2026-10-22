@@ -591,9 +591,14 @@ class FastGemUploadViewSet(viewsets.ModelViewSet):
 class JobMarketViewSet(viewsets.ModelViewSet):
     queryset = JobMarket.objects.all()
     serializer_class = JobMarketSerializer
-    permission_classes = [IsAdminOrSubadmin]
+    permission_classes = [IsAuthenticated]
     search_fields = ['name']
     filterset_fields = ['is_active']
+
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [IsAuthenticated()]
+        return [IsAdminOrSubadmin()]
 
     @action(detail=True, methods=['post'])
     def toggle_active(self, request, pk=None):
