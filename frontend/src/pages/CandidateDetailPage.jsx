@@ -713,8 +713,8 @@ export default function CandidateDetailPage() {
                     <tr><td colSpan="8" className="text-center text-muted py-3">No feedback submitted yet.</td></tr>
                   ) : (Array.isArray(feedbacks) ? feedbacks : []).map((fb) => (
                     <tr key={fb.id}>
-                      <td><small>{fb.interview_type || fb.interview_detail?.interview_type || '-'}</small></td>
-                      <td><small className="text-capitalize">{fb.round || '-'}</small></td>
+                      <td><small>#{fb.interview || '-'}</small></td>
+                      <td><small className="text-capitalize">{fb.round ? fb.round.replace(/_/g, ' ') : '-'}</small></td>
                       <td>
                         <small>
                           {fb.rating ? [...Array(5)].map((_, i) => (
@@ -766,11 +766,11 @@ export default function CandidateDetailPage() {
                     <tr><td colSpan="8" className="text-center text-muted py-3">No observations recorded yet.</td></tr>
                   ) : (Array.isArray(observations) ? observations : []).map((obs) => (
                     <tr key={obs.id}>
-                      <td><small style={{fontFamily:'monospace'}}>{formatDate(obs.date || obs.created_at)}</small></td>
+                      <td><small style={{fontFamily:'monospace'}}>{formatDate(obs.observation_date || obs.created_at)}</small></td>
                       <td><small>{obs.performance_score != null ? obs.performance_score : '-'}</small></td>
                       <td><small>{obs.communication_score != null ? obs.communication_score : '-'}</small></td>
                       <td><small>{obs.technical_score != null ? obs.technical_score : '-'}</small></td>
-                      <td><small>{obs.average_score != null ? obs.average_score : '-'}</small></td>
+                      <td><small>{obs.performance_score != null ? ((obs.performance_score + obs.communication_score + obs.technical_score) / 3).toFixed(1) : '-'}</small></td>
                       <td>
                         <span className={`badge bg-${
                           obs.recommendation === 'proceed' ? 'success' :

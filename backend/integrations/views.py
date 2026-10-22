@@ -33,23 +33,6 @@ class IntegrationCredentialViewSet(viewsets.ModelViewSet):
         credential = self.get_object()
         creds = credential.get_credentials()
 
-        if credential.provider == 'zoom':
-            try:
-                from interviews.services.zoom_service import ZoomService
-                import requests as req
-                resp = req.post(
-                    ZoomService.TOKEN_URL,
-                    params={'grant_type': 'account_credentials', 'account_id': creds.get('account_id', '')},
-                    auth=(creds.get('client_id', ''), creds.get('client_secret', '')),
-                    timeout=10,
-                )
-                resp.raise_for_status()
-                credential.last_verified_at = timezone.now()
-                credential.save(update_fields=['last_verified_at'])
-                return Response({'status': 'ok', 'message': 'Zoom credentials verified.'})
-            except Exception as e:
-                return Response({'status': 'error', 'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
         credential.last_verified_at = timezone.now()
         credential.save(update_fields=['last_verified_at'])
         return Response({'status': 'ok', 'message': 'Credentials saved. Verification pending.'})

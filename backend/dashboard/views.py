@@ -27,9 +27,9 @@ class RecruiterDashboardView(APIView):
     def get(self, request):
         user = request.user
         if user.role == 'recruiter':
-            candidates = Candidate.objects.filter(assigned_recruiter=user, is_migrated=False)
+            candidates = Candidate.objects.filter(assigned_recruiter=user, is_migrated=False, is_deleted=False)
         else:
-            candidates = Candidate.objects.filter(is_migrated=False)
+            candidates = Candidate.objects.filter(is_migrated=False, is_deleted=False)
 
         today = timezone.now().date()
 
@@ -98,7 +98,7 @@ class AdminDashboardView(APIView):
         else:
             end_date = today
 
-        fresh_qs = Candidate.objects.filter(is_migrated=False)
+        fresh_qs = Candidate.objects.filter(is_migrated=False, is_deleted=False)
         total = fresh_qs.count()
         fresh = fresh_qs.filter(current_bucket=BUCKET_FRESH).count()
         pipeline = fresh_qs.filter(current_bucket=BUCKET_PIPELINE).count()

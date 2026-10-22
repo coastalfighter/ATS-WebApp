@@ -211,8 +211,12 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         slot = booking.interview_slot
         if slot.booked_count > 0:
-            slot.booked_count -= 1
-            slot.save(update_fields=['booked_count'])
+            from django.db.models import F
+            from interviews.models import InterviewSlot
+            InterviewSlot.objects.filter(pk=slot.pk).update(
+                booked_count=F('booked_count') - 1
+            )
+            slot.refresh_from_db()
             slot.refresh_status()
 
         _release_zoom_room(slot)

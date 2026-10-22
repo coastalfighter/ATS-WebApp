@@ -304,8 +304,7 @@ class InterviewFeedbackViewSet(viewsets.ModelViewSet):
 
     def _auto_transition_candidate(self, feedback):
         from candidates.constants import (
-            PIPELINE_INTERVIEW_COMPLETED, PIPELINE_SELECTED,
-            PIPELINE_REJECTED, PIPELINE_ROUND2_COMPLETED,
+            PIPELINE_SELECTED, PIPELINE_REJECTED,
             PIPELINE_ROUND2_SCHEDULED, VALID_PIPELINE_TRANSITIONS,
         )
         candidate = feedback.interview.candidate
@@ -326,7 +325,7 @@ class InterviewFeedbackViewSet(viewsets.ModelViewSet):
             from candidates.models import CandidateActivityLog
             CandidateActivityLog.objects.create(
                 candidate=candidate,
-                action='status_changed',
+                action_type='status_changed',
                 old_value=old_status,
                 new_value=target,
                 performed_by=self.request.user,

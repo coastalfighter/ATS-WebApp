@@ -51,6 +51,9 @@ def sync_ringcentral_call_logs(self):
             clean = phone.replace('+', '').replace('-', '').replace(' ', '')
             candidate = Candidate.objects.filter(phone__endswith=clean[-10:]).first()
 
+        if not candidate:
+            continue
+
         CallLog.objects.create(
             candidate=candidate,
             phone_number=phone,

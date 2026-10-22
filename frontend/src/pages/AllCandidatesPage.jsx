@@ -82,8 +82,11 @@ export default function AllCandidatesPage() {
     'asked_to_connect_later', 'wrong_number', 'invalid_contact',
     'duplicate', 'do_not_contact', 'follow_up_due', 'interested',
     'screening_scheduled', 'screening_completed',
-    'interview_scheduled', 'interview_completed', 'submitted',
-    'rejected', 'selected', 'offer_released', 'joined', 'dropped',
+    'interview_scheduled', 'interview_completed',
+    'round2_scheduled', 'round2_completed',
+    'observation', 'training', 'training_completed',
+    'submitted', 'rejected', 'selected', 'offer_released',
+    'joined', 'dropped', 'hired', 'fastgem_uploaded',
   ];
 
   return (

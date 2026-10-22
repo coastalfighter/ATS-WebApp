@@ -377,9 +377,9 @@ class Command(BaseCommand):
 
             obj = ZoomAccount.objects.create(
                 room_name=name,
-                account_id=email,
-                client_id=z.get('meetingId', ''),
-                client_secret='',
+                room_number=z.get('roomNo', 1),
+                zoom_email=email,
+                personal_meeting_link=z.get('meetingId', ''),
                 is_active=z.get('active', True),
             )
             self.fb_zoom_id_to_django_id[doc_id] = obj.id
