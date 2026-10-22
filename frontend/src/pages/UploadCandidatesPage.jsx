@@ -112,8 +112,6 @@ export default function UploadCandidatesPage() {
       const payload = { ...form };
       if (!payload.assigned_recruiter) {
         delete payload.assigned_recruiter;
-      } else {
-        payload.assigned_recruiter = Number(payload.assigned_recruiter);
       }
       Object.keys(payload).forEach(key => {
         if (payload[key] === '' || payload[key] === null || payload[key] === undefined) {
@@ -335,7 +333,7 @@ export default function UploadCandidatesPage() {
                       <div className="instruction-number">5</div>
                       <div>
                         <div className="fw-medium" style={{fontSize:'0.85rem'}}>Auto-assignment</div>
-                        <small className="text-muted">Candidates are assigned to recruiters via round-robin. All start in &ldquo;Fresh&rdquo; bucket.</small>
+                        <small className="text-muted">Candidates are available to all recruiters. All start in &ldquo;Fresh&rdquo; bucket.</small>
                       </div>
                     </div>
                   </div>
@@ -456,7 +454,7 @@ export default function UploadCandidatesPage() {
                     <label className="form-label form-label-sm">Recruiter</label>
                     <select className="form-select form-select-sm" name="assigned_recruiter"
                       value={form.assigned_recruiter} onChange={handleFormChange}>
-                      <option value="">Auto-assign (round robin)</option>
+                      <option value="">Available to all recruiters</option>
                       {recruiters.map((r) => (
                         <option key={r.id} value={r.id}>
                           {r.full_name || `${r.first_name} ${r.last_name}`}
@@ -544,7 +542,7 @@ export default function UploadCandidatesPage() {
                   <div className="instruction-number">2</div>
                   <div>
                     <div className="fw-medium" style={{fontSize:'0.85rem'}}>Recruiter assignment</div>
-                    <small className="text-muted">Pick a recruiter or leave blank for auto round-robin</small>
+                    <small className="text-muted">Pick a recruiter or leave blank for all recruiters</small>
                   </div>
                 </div>
                 <div className="instruction-item">

@@ -9,7 +9,6 @@ from candidates.constants import (
     BUCKET_FRESH, FRESH_NEVER_CONTACTED, ACTION_CANDIDATE_IMPORTED,
 )
 from .duplicate_detection import DuplicateDetectionService
-from .assignment import AssignmentService
 
 logger = logging.getLogger('ats')
 
@@ -204,13 +203,6 @@ class ImportHandler:
 
                 new_candidates.append(candidate)
                 imported += 1
-
-            if new_candidates:
-                assigned, assign_errors = AssignmentService.auto_assign_candidates(
-                    new_candidates, uploaded_by
-                )
-                for err in assign_errors:
-                    logger.warning(err)
 
             batch.imported_count = imported
             batch.duplicate_count = duplicates

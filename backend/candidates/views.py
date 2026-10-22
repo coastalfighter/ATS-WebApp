@@ -45,13 +45,9 @@ class CandidateViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        qs = Candidate.objects.filter(is_deleted=False).select_related(
+        return Candidate.objects.filter(is_deleted=False).select_related(
             'assigned_recruiter', 'assigned_trainer', 'created_by', 'updated_by'
         )
-        user = self.request.user
-        if user.role == 'recruiter':
-            qs = qs.filter(assigned_recruiter=user)
-        return qs
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -82,10 +78,6 @@ class CandidateViewSet(viewsets.ModelViewSet):
         )
         if explicit_recruiter:
             AssignmentService.assign_candidate(candidate, explicit_recruiter, self.request.user)
-        else:
-            recruiter = AssignmentService.get_next_recruiter()
-            if recruiter:
-                AssignmentService.assign_candidate(candidate, recruiter, self.request.user)
         CandidateActivityLog.objects.create(
             candidate=candidate,
             action_type=ACTION_CANDIDATE_CREATED,
