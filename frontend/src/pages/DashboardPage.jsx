@@ -50,10 +50,10 @@ function LineChart({ labels, data, color, title, subtitle }) {
     const maxVal = Math.max(...data, 1);
     const gridSteps = 4;
 
-    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
     ctx.lineWidth = 1;
     ctx.font = '11px Inter, system-ui, sans-serif';
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#8e8e93';
     ctx.textAlign = 'right';
 
     for (let i = 0; i <= gridSteps; i++) {
@@ -318,7 +318,7 @@ export default function DashboardPage() {
                 <div className="dash-stat-value">{data?.bookings_in_range || 0}</div>
                 <div className="dash-stat-sub">{appliedFrom} to {appliedTo}</div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#4f46e510', color: '#4f46e5' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(10,132,255,0.08)', color: '#0a84ff' }}>
                 <i className="bi bi-calendar-check"></i>
               </div>
             </div>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                     : 'No upcoming slots'}
                 </div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#7c3aed10', color: '#7c3aed' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(90,200,250,0.1)', color: '#5ac8fa' }}>
                 <i className="bi bi-clock-history"></i>
               </div>
             </div>
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                 <div className="dash-stat-value">{data?.leads_in_range || 0}</div>
                 <div className="dash-stat-sub">Selected date range</div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#05966910', color: '#059669' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(48,209,88,0.08)', color: '#30d158' }}>
                 <i className="bi bi-cloud-arrow-up"></i>
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function DashboardPage() {
                 <div className="dash-stat-value">{data?.calls_in_range || 0}</div>
                 <div className="dash-stat-sub">From call audit logs</div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#d9770610', color: '#d97706' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(255,159,10,0.08)', color: '#ff9f0a' }}>
                 <i className="bi bi-telephone"></i>
               </div>
             </div>
@@ -370,7 +370,7 @@ export default function DashboardPage() {
                 <div className="dash-stat-value">{data?.missing_zoom || 0}</div>
                 <div className="dash-stat-sub">{(data?.missing_zoom || 0) > 0 ? 'Needs attention' : 'All good'}</div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#0891b210', color: '#0891b2' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(94,92,230,0.08)', color: '#5e5ce6' }}>
                 <i className="bi bi-camera-video"></i>
               </div>
             </div>
@@ -384,7 +384,7 @@ export default function DashboardPage() {
                 <div className="dash-stat-label">FRESH ASSIGNED</div>
                 <div className="dash-stat-value">{data?.fresh_count || 0}</div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#4f46e510', color: '#4f46e5' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(10,132,255,0.08)', color: '#0a84ff' }}>
                 <i className="bi bi-person-plus"></i>
               </div>
             </div>
@@ -395,7 +395,7 @@ export default function DashboardPage() {
                 <div className="dash-stat-label">IN PIPELINE</div>
                 <div className="dash-stat-value">{data?.pipeline_count || 0}</div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#05966910', color: '#059669' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(48,209,88,0.08)', color: '#30d158' }}>
                 <i className="bi bi-funnel"></i>
               </div>
             </div>
@@ -406,7 +406,7 @@ export default function DashboardPage() {
                 <div className="dash-stat-label">NEVER CONTACTED</div>
                 <div className="dash-stat-value">{data?.never_contacted || 0}</div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#dc262610', color: '#dc2626' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(255,69,58,0.08)', color: '#ff453a' }}>
                 <i className="bi bi-telephone-x"></i>
               </div>
             </div>
@@ -417,7 +417,7 @@ export default function DashboardPage() {
                 <div className="dash-stat-label">FOLLOW-UPS DUE</div>
                 <div className="dash-stat-value">{data?.follow_ups_due || 0}</div>
               </div>
-              <div className="dash-stat-icon" style={{ background: '#d9770610', color: '#d97706' }}>
+              <div className="dash-stat-icon" style={{ background: 'rgba(255,159,10,0.08)', color: '#ff9f0a' }}>
                 <i className="bi bi-clock"></i>
               </div>
             </div>
@@ -430,13 +430,13 @@ export default function DashboardPage() {
         <div className="dash-next-slot mb-4">
           <div className="dash-next-slot-header">
             <div className="d-flex align-items-center gap-2">
-              <i className="bi bi-clock-history" style={{ color: '#7c3aed', fontSize: '1.1rem' }}></i>
+              <i className="bi bi-clock-history" style={{ color: '#0a84ff', fontSize: '1.1rem' }}></i>
               <div>
                 <h6 className="mb-0 fw-bold">Next Interview Slot</h6>
                 <small className="text-muted">All upcoming interviews in the next available slot</small>
               </div>
             </div>
-            <span className="badge" style={{ background: '#7c3aed15', color: '#7c3aed', fontSize: '0.75rem' }}>
+            <span className="badge" style={{ background: 'rgba(10,132,255,0.1)', color: '#0a84ff', fontSize: '0.75rem' }}>
               1 slot
             </span>
           </div>
@@ -592,7 +592,7 @@ export default function DashboardPage() {
         <div className="table-container mb-4">
           <div className="p-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div className="d-flex align-items-center gap-2">
-              <i className="bi bi-bullseye" style={{ color: '#4f46e5', fontSize: '1.1rem' }}></i>
+              <i className="bi bi-bullseye" style={{ color: '#0a84ff', fontSize: '1.1rem' }}></i>
               <h6 className="mb-0 fw-bold">Weekly Booking Goals</h6>
             </div>
             <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -698,7 +698,7 @@ export default function DashboardPage() {
           <div style={{ overflowX: 'auto' }}>
             <table className="table table-sm mb-0" style={{ fontSize: '0.82rem' }}>
               <thead>
-                <tr style={{ background: '#4f46e5', color: '#fff' }}>
+                <tr style={{ background: '#0a84ff', color: '#fff' }}>
                   <th style={{ padding: '8px 12px' }}>LOCATION</th>
                   <th className="text-center" style={{ padding: '8px 12px' }}>Goal</th>
                   <th className="text-center" style={{ padding: '8px 12px' }}>Booked</th>
@@ -743,7 +743,7 @@ export default function DashboardPage() {
                   );
                 })}
                 {goalsData && goalsData.goals.length > 0 && (
-                  <tr style={{ background: '#4f46e510', fontWeight: 700 }}>
+                  <tr style={{ background: 'rgba(10,132,255,0.06)', fontWeight: 700 }}>
                     <td style={{ padding: '8px 12px' }}>TOTAL</td>
                     <td className="text-center" style={{ padding: '8px 12px' }}>{goalsData.totals.goal}</td>
                     <td className="text-center" style={{ padding: '8px 12px' }}>{goalsData.totals.booked}</td>
@@ -767,7 +767,7 @@ export default function DashboardPage() {
             <LineChart
               labels={data.daily_leads.labels}
               data={data.daily_leads.data}
-              color="#4f46e5"
+              color="#0a84ff"
               title="Daily Leads Upload Pattern"
               subtitle={`Selected range: ${appliedFrom} to ${appliedTo}`}
             />
@@ -776,7 +776,7 @@ export default function DashboardPage() {
             <LineChart
               labels={data.daily_calls.labels}
               data={data.daily_calls.data}
-              color="#059669"
+              color="#30d158"
               title="Daily Call Pattern"
               subtitle={`Selected range: ${appliedFrom} to ${appliedTo}`}
             />

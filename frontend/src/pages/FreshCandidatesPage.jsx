@@ -9,9 +9,9 @@ import ClickToCallButton from '../components/candidates/ClickToCallButton';
 import BulkActionToolbar from '../components/candidates/BulkActionToolbar';
 
 const AVATAR_COLORS = [
-  '#4f46e5', '#7c3aed', '#db2777', '#dc2626', '#ea580c',
-  '#d97706', '#65a30d', '#059669', '#0891b2', '#2563eb',
-  '#7c3aed', '#9333ea', '#c026d3', '#e11d48', '#0d9488',
+  '#0a84ff', '#5ac8fa', '#ff6482', '#ff453a', '#ff9f0a',
+  '#ff9f0a', '#30d158', '#30d158', '#5e5ce6', '#0a84ff',
+  '#5ac8fa', '#bf5af2', '#bf5af2', '#ff2d55', '#0d9488',
 ];
 
 function getAvatarColor(name) {

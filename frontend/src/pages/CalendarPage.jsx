@@ -53,7 +53,7 @@ function getMonthDates(year, month) {
 }
 
 const STATUS_COLORS = {
-  scheduled: { bg: '#4f46e5', text: '#fff' },
+  scheduled: { bg: '#0a84ff', text: '#fff' },
   completed: { bg: '#059669', text: '#fff' },
   cancelled: { bg: '#dc2626', text: '#fff' },
   rescheduled: { bg: '#d97706', text: '#fff' },
