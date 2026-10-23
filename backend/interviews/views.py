@@ -205,6 +205,9 @@ class InterviewSlotViewSet(viewsets.ModelViewSet):
         date_from = self.request.query_params.get('date_from')
         if date_from:
             qs = qs.filter(date__gte=date_from)
+        elif self.request.query_params.get('include_past') != 'true':
+            from django.utils import timezone
+            qs = qs.filter(date__gte=timezone.now().date())
         date_to = self.request.query_params.get('date_to')
         if date_to:
             qs = qs.filter(date__lte=date_to)
