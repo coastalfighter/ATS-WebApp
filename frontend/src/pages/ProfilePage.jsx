@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [rcLoading, setRcLoading] = useState(true);
   const [rcConnecting, setRcConnecting] = useState(false);
   const [rcDisconnecting, setRcDisconnecting] = useState(false);
+  const [rcError, setRcError] = useState('');
 
   useEffect(() => {
     notificationsAPI.getPreferences()
@@ -63,8 +64,9 @@ export default function ProfilePage() {
           });
           setSuccess('RingCentral connected successfully!');
         })
-        .catch(() => {
-          setError('Failed to connect RingCentral. Please try again.');
+        .catch((err) => {
+          const detail = err.response?.data?.detail || 'Failed to connect RingCentral. Please try again.';
+          setRcError(detail);
         })
         .finally(() => setRcConnecting(false));
     }
@@ -72,27 +74,34 @@ export default function ProfilePage() {
 
   const handleConnectRC = async () => {
     setRcConnecting(true);
-    setError('');
+    setRcError('');
     try {
       const { data } = await integrationsAPI.rcAuthorize({
         redirect_uri: window.location.origin + '/profile',
       });
-      window.location.href = data.authorize_url;
-    } catch {
-      setError('Failed to initiate RingCentral connection. Please check admin settings.');
+      if (data.authorize_url) {
+        window.location.href = data.authorize_url;
+      } else {
+        setRcError('Invalid response from server.');
+        setRcConnecting(false);
+      }
+    } catch (err) {
+      const detail = err.response?.data?.detail || 'Failed to initiate RingCentral connection.';
+      setRcError(detail);
       setRcConnecting(false);
     }
   };
 
   const handleDisconnectRC = async () => {
     setRcDisconnecting(true);
-    setError('');
+    setRcError('');
     try {
       await integrationsAPI.rcDisconnect();
       setRcStatus({ is_connected: false, rc_email: '', rc_phone_number: '' });
       setSuccess('RingCentral disconnected.');
-    } catch {
-      setError('Failed to disconnect RingCentral.');
+    } catch (err) {
+      const detail = err.response?.data?.detail || 'Failed to disconnect RingCentral.';
+      setRcError(detail);
     } finally {
       setRcDisconnecting(false);
     }
@@ -175,6 +184,13 @@ export default function ProfilePage() {
         <h5 className="mb-3">
           <i className="bi bi-telephone-forward me-2"></i>RingCentral Connection
         </h5>
+        {rcError && (
+          <div className="alert alert-danger py-2 px-3 mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
+            <i className="bi bi-exclamation-triangle-fill"></i>
+            <span>{rcError}</span>
+            <button type="button" className="btn-close btn-close-sm ms-auto" style={{ fontSize: '0.6rem' }} onClick={() => setRcError('')}></button>
+          </div>
+        )}
         {rcLoading ? (
           <div className="text-center py-3">
             <div className="spinner-border spinner-border-sm"></div>
