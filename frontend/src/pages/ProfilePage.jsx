@@ -52,6 +52,7 @@ export default function ProfilePage() {
     if (code) {
       window.history.replaceState({}, '', window.location.pathname);
       setRcConnecting(true);
+      setRcError('');
       integrationsAPI.rcCallback({
         code,
         redirect_uri: window.location.origin + '/profile',
@@ -62,6 +63,7 @@ export default function ProfilePage() {
             rc_email: data.rc_email,
             rc_phone_number: data.rc_phone_number,
           });
+          setRcError('');
           setSuccess('RingCentral connected successfully!');
         })
         .catch((err) => {
