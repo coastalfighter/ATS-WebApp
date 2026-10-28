@@ -59,6 +59,8 @@ class RingCentralCallView(generics.GenericAPIView):
         if not candidate.phone:
             return Response({'detail': 'Candidate has no phone number.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        from .services.ringcentral_service import RingCentralService
+
         from_number = request.data.get('from_number', request.user.phone or '')
         if not from_number:
             from .models import RingCentralConnection
@@ -68,9 +70,9 @@ class RingCentralCallView(generics.GenericAPIView):
             except RingCentralConnection.DoesNotExist:
                 pass
         if not from_number:
+            from_number = RingCentralService.get_caller_phone(user=request.user)
+        if not from_number:
             return Response({'detail': 'No caller phone number. Set your phone in profile or connect RingCentral.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        from .services.ringcentral_service import RingCentralService
         try:
             result = RingCentralService.initiate_ringout(from_number, candidate.phone, user=request.user)
             if result is None:
