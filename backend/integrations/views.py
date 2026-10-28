@@ -133,7 +133,6 @@ class RingCentralAuthorizeView(generics.GenericAPIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        login_url = server_url.replace('platform.', 'login.')
         state = secrets.token_urlsafe(32)
 
         params = {
@@ -142,7 +141,7 @@ class RingCentralAuthorizeView(generics.GenericAPIView):
             'redirect_uri': redirect_uri,
             'state': state,
         }
-        authorize_url = f'{login_url}/restapi/oauth/authorize?{urlencode(params)}'
+        authorize_url = f'{server_url}/restapi/oauth/authorize?{urlencode(params)}'
 
         return Response({
             'authorize_url': authorize_url,
