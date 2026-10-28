@@ -199,10 +199,11 @@ class RingCentralCallbackView(generics.GenericAPIView):
         rc_email = ''
         rc_phone = ''
         rc_user_id = ''
+        headers = {'Authorization': f'Bearer {access_token}'}
         try:
             info_resp = requests.get(
                 f'{server_url}/restapi/v1.0/account/~/extension/~',
-                headers={'Authorization': f'Bearer {access_token}'},
+                headers=headers,
                 timeout=10,
             )
             info_resp.raise_for_status()
@@ -210,15 +211,31 @@ class RingCentralCallbackView(generics.GenericAPIView):
             rc_user_id = str(info.get('id', ''))
             contact = info.get('contact', {})
             rc_email = contact.get('email', '')
-            phone_numbers = info.get('phoneNumbers', [])
-            for pn in phone_numbers:
-                if pn.get('usageType') == 'DirectNumber' or pn.get('type') == 'VoiceFax':
-                    rc_phone = pn.get('phoneNumber', '')
-                    break
-            if not rc_phone and phone_numbers:
-                rc_phone = phone_numbers[0].get('phoneNumber', '')
         except Exception as e:
             logger.warning(f'Failed to fetch RC user info: {e}')
+
+        try:
+            pn_resp = requests.get(
+                f'{server_url}/restapi/v1.0/account/~/extension/~/phone-number',
+                headers=headers,
+                timeout=10,
+            )
+            pn_resp.raise_for_status()
+            records = pn_resp.json().get('records', [])
+            for r in records:
+                features = r.get('features', [])
+                if 'CallerId' in features:
+                    rc_phone = r.get('phoneNumber', '')
+                    break
+            if not rc_phone:
+                for r in records:
+                    if r.get('usageType') == 'DirectNumber':
+                        rc_phone = r.get('phoneNumber', '')
+                        break
+            if not rc_phone and records:
+                rc_phone = records[0].get('phoneNumber', '')
+        except Exception as e:
+            logger.warning(f'Failed to fetch RC phone numbers: {e}')
 
         from .models import RingCentralConnection
         conn, _ = RingCentralConnection.objects.update_or_create(

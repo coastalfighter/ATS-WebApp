@@ -94,6 +94,7 @@ class RingCentralService:
         token, server_url = cls._get_access_token(user=user)
         if not token:
             return None
+        phone = None
         try:
             resp = requests.get(
                 f'{server_url}/restapi/v1.0/account/~/extension/~/phone-number',
@@ -104,13 +105,27 @@ class RingCentralService:
             records = resp.json().get('records', [])
             for r in records:
                 features = r.get('features', [])
-                if 'CallerId' in features or 'SmsSender' in features:
-                    return r.get('phoneNumber')
-            if records:
-                return records[0].get('phoneNumber')
+                if 'CallerId' in features:
+                    phone = r.get('phoneNumber')
+                    break
+            if not phone:
+                for r in records:
+                    if r.get('usageType') == 'DirectNumber':
+                        phone = r.get('phoneNumber')
+                        break
+            if not phone and records:
+                phone = records[0].get('phoneNumber')
         except Exception as e:
             logger.warning(f'Failed to fetch RC phone numbers: {e}')
-        return None
+        if phone and user:
+            try:
+                from integrations.models import RingCentralConnection
+                RingCentralConnection.objects.filter(
+                    user=user, is_connected=True, rc_phone_number='',
+                ).update(rc_phone_number=phone)
+            except Exception:
+                pass
+        return phone
 
     @classmethod
     def initiate_ringout(cls, from_number, to_number, user=None):
