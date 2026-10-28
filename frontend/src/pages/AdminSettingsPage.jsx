@@ -17,19 +17,6 @@ const INTEGRATION_GROUPS = [
     ],
   },
   {
-    key: 'ringcentral',
-    label: 'RingCentral',
-    icon: 'bi-telephone-fill',
-    color: '#F47721',
-    description: 'Click-to-call and call tracking via RingCentral',
-    fields: [
-      { key: 'ringcentral_server_url', label: 'Server URL', type: 'text', placeholder: 'https://platform.ringcentral.com' },
-      { key: 'ringcentral_client_id', label: 'Client ID', type: 'text', placeholder: 'OAuth App Client ID' },
-      { key: 'ringcentral_client_secret', label: 'Client Secret', type: 'password', placeholder: 'OAuth App Client Secret' },
-      { key: 'ringcentral_enabled', label: 'Enable RingCentral', type: 'toggle' },
-    ],
-  },
-  {
     key: 'email',
     label: 'Email / SMTP',
     icon: 'bi-envelope-fill',

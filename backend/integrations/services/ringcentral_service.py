@@ -2,7 +2,6 @@ import logging
 import requests
 from django.conf import settings as django_settings
 from django.utils import timezone
-from candidates.models import AppSetting
 
 logger = logging.getLogger('ats')
 
@@ -11,19 +10,15 @@ class RingCentralService:
 
     @staticmethod
     def _get_config():
-        server_url = AppSetting.get('ringcentral_server_url', 'https://platform.ringcentral.com')
-        client_id = AppSetting.get('ringcentral_client_id', '')
-        client_secret = AppSetting.get('ringcentral_client_secret', '')
-        jwt_token = AppSetting.get('ringcentral_jwt_token', '')
+        server_url = getattr(django_settings, 'RINGCENTRAL_SERVER_URL', 'https://platform.ringcentral.com')
+        client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
+        client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
+        jwt_token = getattr(django_settings, 'RINGCENTRAL_JWT_TOKEN', '')
         return server_url, client_id, client_secret, jwt_token
 
     @classmethod
     def _refresh_user_token(cls, connection):
         server_url, client_id, client_secret, _ = cls._get_config()
-        if not client_id:
-            client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
-        if not client_secret:
-            client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
 
         _, refresh_token = connection.get_tokens()
         if not refresh_token:
@@ -78,15 +73,8 @@ class RingCentralService:
                 pass
 
         if not all([client_id, client_secret, jwt_token]):
-            rc_client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
-            rc_client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
-            rc_jwt_token = getattr(django_settings, 'RINGCENTRAL_JWT_TOKEN', '')
-            rc_server_url = getattr(django_settings, 'RINGCENTRAL_SERVER_URL', 'https://platform.ringcentral.com')
-            if all([rc_client_id, rc_client_secret, rc_jwt_token]):
-                client_id, client_secret, jwt_token, server_url = rc_client_id, rc_client_secret, rc_jwt_token, rc_server_url
-            else:
-                logger.warning('RingCentral credentials not configured')
-                return None, None
+            logger.warning('RingCentral credentials not configured')
+            return None, None
 
         resp = requests.post(
             f'{server_url}/restapi/oauth/token',

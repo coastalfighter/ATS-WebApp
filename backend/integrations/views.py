@@ -125,15 +125,11 @@ class RingCentralAuthorizeView(generics.GenericAPIView):
         if not redirect_uri:
             return Response({'detail': 'redirect_uri required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        from candidates.models import AppSetting
-        server_url = AppSetting.get('ringcentral_server_url', 'https://platform.ringcentral.com')
-        client_id = AppSetting.get('ringcentral_client_id', '')
-
-        if not client_id:
-            client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
+        server_url = getattr(django_settings, 'RINGCENTRAL_SERVER_URL', 'https://platform.ringcentral.com')
+        client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
         if not client_id:
             return Response(
-                {'detail': 'RingCentral not configured. Admin must set Client ID in Settings.'},
+                {'detail': 'RingCentral not configured.'},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
@@ -163,15 +159,9 @@ class RingCentralCallbackView(generics.GenericAPIView):
         if not code or not redirect_uri:
             return Response({'detail': 'code and redirect_uri required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        from candidates.models import AppSetting
-        server_url = AppSetting.get('ringcentral_server_url', 'https://platform.ringcentral.com')
-        client_id = AppSetting.get('ringcentral_client_id', '')
-        client_secret = AppSetting.get('ringcentral_client_secret', '')
-
-        if not client_id:
-            client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
-        if not client_secret:
-            client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
+        server_url = getattr(django_settings, 'RINGCENTRAL_SERVER_URL', 'https://platform.ringcentral.com')
+        client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
+        client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
 
         if not all([client_id, client_secret]):
             return Response({'detail': 'RingCentral not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -270,14 +260,9 @@ class RingCentralConnectionView(generics.GenericAPIView):
 
             access_token, _ = conn.get_tokens()
             if access_token:
-                from candidates.models import AppSetting
-                server_url = AppSetting.get('ringcentral_server_url', 'https://platform.ringcentral.com')
-                client_id = AppSetting.get('ringcentral_client_id', '')
-                client_secret = AppSetting.get('ringcentral_client_secret', '')
-                if not client_id:
-                    client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
-                if not client_secret:
-                    client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
+                server_url = getattr(django_settings, 'RINGCENTRAL_SERVER_URL', 'https://platform.ringcentral.com')
+                client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
+                client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
                 try:
                     requests.post(
                         f'{server_url}/restapi/oauth/revoke',
