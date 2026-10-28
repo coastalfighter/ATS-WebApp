@@ -235,6 +235,10 @@ export const integrationsAPI = {
   initiateCall: (data) => api.post('/integrations/ringcentral/call/', data),
   callStatus: (params) => api.get('/integrations/ringcentral/status/', { params }),
   syncCallLogs: () => api.post('/integrations/ringcentral/sync/'),
+  rcAuthorize: (params) => api.get('/integrations/ringcentral/authorize/', { params }),
+  rcCallback: (data) => api.post('/integrations/ringcentral/callback/', data),
+  rcConnection: () => api.get('/integrations/ringcentral/connection/'),
+  rcDisconnect: () => api.delete('/integrations/ringcentral/connection/'),
 };
 
 export const emailTemplatesAPI = {

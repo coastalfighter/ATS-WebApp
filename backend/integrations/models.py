@@ -56,3 +56,35 @@ class EmailTemplate(models.Model):
 
     def __str__(self):
         return f'{self.label} ({self.template_key})'
+
+
+class RingCentralConnection(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='rc_connection',
+    )
+    _encrypted_tokens = models.TextField(blank=True)
+    rc_user_id = models.CharField(max_length=100, blank=True)
+    rc_email = models.CharField(max_length=255, blank=True)
+    rc_phone_number = models.CharField(max_length=30, blank=True)
+    is_connected = models.BooleanField(default=False)
+    token_expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def set_tokens(self, access_token, refresh_token):
+        self._encrypted_tokens = encrypt_json({
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+        })
+
+    def get_tokens(self):
+        if not self._encrypted_tokens:
+            return '', ''
+        data = decrypt_json(self._encrypted_tokens)
+        return data.get('access_token', ''), data.get('refresh_token', '')
+
+    def __str__(self):
+        status = 'connected' if self.is_connected else 'disconnected'
+        return f'RC Connection — {self.user.username} ({status})'

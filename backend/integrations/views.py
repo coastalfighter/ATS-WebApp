@@ -1,4 +1,8 @@
 import logging
+import secrets
+import requests
+from urllib.parse import urlencode
+from django.conf import settings as django_settings
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -61,9 +65,9 @@ class RingCentralCallView(generics.GenericAPIView):
 
         from .services.ringcentral_service import RingCentralService
         try:
-            result = RingCentralService.initiate_ringout(from_number, candidate.phone)
+            result = RingCentralService.initiate_ringout(from_number, candidate.phone, user=request.user)
             if result is None:
-                return Response({'detail': 'RingCentral not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                return Response({'detail': 'RingCentral not configured. Connect RingCentral in your profile.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
             from interviews.models import CallLog
             CallLog.objects.create(
@@ -93,7 +97,7 @@ class RingCentralStatusView(generics.GenericAPIView):
 
         from .services.ringcentral_service import RingCentralService
         try:
-            result = RingCentralService.get_call_status(session_id)
+            result = RingCentralService.get_call_status(session_id, user=request.user)
             if result is None:
                 return Response({'detail': 'RingCentral not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             return Response(result)
@@ -111,6 +115,188 @@ class SyncCallLogsView(generics.GenericAPIView):
         except Exception:
             return Response({'detail': 'Task queue unavailable. Please try again later.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response({'detail': 'Call log sync initiated.'})
+
+
+class RingCentralAuthorizeView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        redirect_uri = request.query_params.get('redirect_uri')
+        if not redirect_uri:
+            return Response({'detail': 'redirect_uri required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from candidates.models import AppSetting
+        server_url = AppSetting.get('ringcentral_server_url', 'https://platform.ringcentral.com')
+        client_id = AppSetting.get('ringcentral_client_id', '')
+
+        if not client_id:
+            client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
+        if not client_id:
+            return Response(
+                {'detail': 'RingCentral not configured. Admin must set Client ID in Settings.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        login_url = server_url.replace('platform.', 'login.')
+        state = secrets.token_urlsafe(32)
+
+        params = {
+            'response_type': 'code',
+            'client_id': client_id,
+            'redirect_uri': redirect_uri,
+            'state': state,
+        }
+        authorize_url = f'{login_url}/restapi/oauth/authorize?{urlencode(params)}'
+
+        return Response({
+            'authorize_url': authorize_url,
+            'state': state,
+        })
+
+
+class RingCentralCallbackView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        code = request.data.get('code')
+        redirect_uri = request.data.get('redirect_uri')
+        if not code or not redirect_uri:
+            return Response({'detail': 'code and redirect_uri required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from candidates.models import AppSetting
+        server_url = AppSetting.get('ringcentral_server_url', 'https://platform.ringcentral.com')
+        client_id = AppSetting.get('ringcentral_client_id', '')
+        client_secret = AppSetting.get('ringcentral_client_secret', '')
+
+        if not client_id:
+            client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
+        if not client_secret:
+            client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
+
+        if not all([client_id, client_secret]):
+            return Response({'detail': 'RingCentral not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        try:
+            resp = requests.post(
+                f'{server_url}/restapi/oauth/token',
+                data={
+                    'grant_type': 'authorization_code',
+                    'code': code,
+                    'redirect_uri': redirect_uri,
+                },
+                auth=(client_id, client_secret),
+                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            token_data = resp.json()
+        except requests.RequestException as e:
+            logger.exception(f'RC OAuth token exchange failed: {e}')
+            return Response({'detail': 'Failed to exchange authorization code.'}, status=status.HTTP_502_BAD_GATEWAY)
+
+        access_token = token_data.get('access_token', '')
+        refresh_token = token_data.get('refresh_token', '')
+        expires_in = token_data.get('expires_in', 3600)
+
+        rc_email = ''
+        rc_phone = ''
+        rc_user_id = ''
+        try:
+            info_resp = requests.get(
+                f'{server_url}/restapi/v1.0/account/~/extension/~',
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=10,
+            )
+            info_resp.raise_for_status()
+            info = info_resp.json()
+            rc_user_id = str(info.get('id', ''))
+            contact = info.get('contact', {})
+            rc_email = contact.get('email', '')
+            phone_numbers = info.get('phoneNumbers', [])
+            for pn in phone_numbers:
+                if pn.get('usageType') == 'DirectNumber' or pn.get('type') == 'VoiceFax':
+                    rc_phone = pn.get('phoneNumber', '')
+                    break
+            if not rc_phone and phone_numbers:
+                rc_phone = phone_numbers[0].get('phoneNumber', '')
+        except Exception as e:
+            logger.warning(f'Failed to fetch RC user info: {e}')
+
+        from .models import RingCentralConnection
+        conn, _ = RingCentralConnection.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'is_connected': True,
+                'rc_user_id': rc_user_id,
+                'rc_email': rc_email,
+                'rc_phone_number': rc_phone,
+                'token_expires_at': timezone.now() + timezone.timedelta(seconds=expires_in),
+            },
+        )
+        conn.set_tokens(access_token, refresh_token)
+        conn.save(update_fields=['_encrypted_tokens'])
+
+        return Response({
+            'status': 'connected',
+            'rc_email': rc_email,
+            'rc_phone_number': rc_phone,
+        })
+
+
+class RingCentralConnectionView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import RingCentralConnection
+        try:
+            conn = RingCentralConnection.objects.get(user=request.user)
+            return Response({
+                'is_connected': conn.is_connected,
+                'rc_email': conn.rc_email,
+                'rc_phone_number': conn.rc_phone_number,
+                'updated_at': conn.updated_at.isoformat(),
+            })
+        except RingCentralConnection.DoesNotExist:
+            return Response({
+                'is_connected': False,
+                'rc_email': '',
+                'rc_phone_number': '',
+            })
+
+    def delete(self, request):
+        from .models import RingCentralConnection
+        try:
+            conn = RingCentralConnection.objects.get(user=request.user)
+
+            access_token, _ = conn.get_tokens()
+            if access_token:
+                from candidates.models import AppSetting
+                server_url = AppSetting.get('ringcentral_server_url', 'https://platform.ringcentral.com')
+                client_id = AppSetting.get('ringcentral_client_id', '')
+                client_secret = AppSetting.get('ringcentral_client_secret', '')
+                if not client_id:
+                    client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
+                if not client_secret:
+                    client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
+                try:
+                    requests.post(
+                        f'{server_url}/restapi/oauth/revoke',
+                        data={'token': access_token},
+                        auth=(client_id, client_secret),
+                        timeout=10,
+                    )
+                except Exception:
+                    pass
+
+            conn.is_connected = False
+            conn._encrypted_tokens = ''
+            conn.rc_email = ''
+            conn.rc_phone_number = ''
+            conn.rc_user_id = ''
+            conn.save()
+        except RingCentralConnection.DoesNotExist:
+            pass
+        return Response({'status': 'disconnected'})
 
 
 class EmailTemplateViewSet(viewsets.ModelViewSet):

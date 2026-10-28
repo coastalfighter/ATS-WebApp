@@ -26,7 +26,6 @@ const INTEGRATION_GROUPS = [
       { key: 'ringcentral_server_url', label: 'Server URL', type: 'text', placeholder: 'https://platform.ringcentral.com' },
       { key: 'ringcentral_client_id', label: 'Client ID', type: 'text', placeholder: 'OAuth App Client ID' },
       { key: 'ringcentral_client_secret', label: 'Client Secret', type: 'password', placeholder: 'OAuth App Client Secret' },
-      { key: 'ringcentral_jwt_token', label: 'JWT Token', type: 'password', placeholder: 'JWT Token for auth' },
       { key: 'ringcentral_enabled', label: 'Enable RingCentral', type: 'toggle' },
     ],
   },

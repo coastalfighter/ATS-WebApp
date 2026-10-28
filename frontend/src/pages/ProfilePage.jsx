@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { authAPI, notificationsAPI } from '../services/api';
+import { authAPI, notificationsAPI, integrationsAPI } from '../services/api';
 import AlertMessage from '../components/common/AlertMessage';
 
 export default function ProfilePage() {
@@ -23,12 +23,80 @@ export default function ProfilePage() {
   });
   const [prefsLoading, setPrefsLoading] = useState(true);
 
+  // RingCentral connection state
+  const [rcStatus, setRcStatus] = useState({ is_connected: false, rc_email: '', rc_phone_number: '' });
+  const [rcLoading, setRcLoading] = useState(true);
+  const [rcConnecting, setRcConnecting] = useState(false);
+  const [rcDisconnecting, setRcDisconnecting] = useState(false);
+
   useEffect(() => {
     notificationsAPI.getPreferences()
       .then(({ data }) => setPrefs(data))
       .catch(() => {})
       .finally(() => setPrefsLoading(false));
   }, []);
+
+  // Load RC connection status
+  useEffect(() => {
+    integrationsAPI.rcConnection()
+      .then(({ data }) => setRcStatus(data))
+      .catch(() => {})
+      .finally(() => setRcLoading(false));
+  }, []);
+
+  // Handle OAuth callback (code in URL params)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      window.history.replaceState({}, '', window.location.pathname);
+      setRcConnecting(true);
+      integrationsAPI.rcCallback({
+        code,
+        redirect_uri: window.location.origin + '/profile',
+      })
+        .then(({ data }) => {
+          setRcStatus({
+            is_connected: true,
+            rc_email: data.rc_email,
+            rc_phone_number: data.rc_phone_number,
+          });
+          setSuccess('RingCentral connected successfully!');
+        })
+        .catch(() => {
+          setError('Failed to connect RingCentral. Please try again.');
+        })
+        .finally(() => setRcConnecting(false));
+    }
+  }, []);
+
+  const handleConnectRC = async () => {
+    setRcConnecting(true);
+    setError('');
+    try {
+      const { data } = await integrationsAPI.rcAuthorize({
+        redirect_uri: window.location.origin + '/profile',
+      });
+      window.location.href = data.authorize_url;
+    } catch {
+      setError('Failed to initiate RingCentral connection. Please check admin settings.');
+      setRcConnecting(false);
+    }
+  };
+
+  const handleDisconnectRC = async () => {
+    setRcDisconnecting(true);
+    setError('');
+    try {
+      await integrationsAPI.rcDisconnect();
+      setRcStatus({ is_connected: false, rc_email: '', rc_phone_number: '' });
+      setSuccess('RingCentral disconnected.');
+    } catch {
+      setError('Failed to disconnect RingCentral.');
+    } finally {
+      setRcDisconnecting(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -100,6 +168,75 @@ export default function ProfilePage() {
               <i className="bi bi-check-lg"></i> Update Profile
             </button>
           </form>
+      </div>
+
+      {/* RingCentral Connection */}
+      <div className="table-container p-4 mt-4" style={{ maxWidth: '600px' }}>
+        <h5 className="mb-3">
+          <i className="bi bi-telephone-forward me-2"></i>RingCentral Connection
+        </h5>
+        {rcLoading ? (
+          <div className="text-center py-3">
+            <div className="spinner-border spinner-border-sm"></div>
+          </div>
+        ) : rcConnecting ? (
+          <div className="text-center py-4">
+            <div className="spinner-border spinner-border-sm text-primary me-2"></div>
+            <span>Connecting to RingCentral...</span>
+          </div>
+        ) : rcStatus.is_connected ? (
+          <div className="p-3 rounded-3" style={{
+            background: 'rgba(48, 209, 88, 0.06)',
+            border: '1px solid rgba(48, 209, 88, 0.2)',
+          }}>
+            <div className="d-flex align-items-center gap-2 mb-3">
+              <i className="bi bi-check-circle-fill" style={{ color: '#30d158', fontSize: '1.3rem' }}></i>
+              <div>
+                <div className="fw-bold">RingCentral Connected</div>
+                <small className="text-muted">RingCentral User</small>
+              </div>
+            </div>
+            <div className="row g-3 mb-3">
+              {rcStatus.rc_email && (
+                <div className="col-md-6">
+                  <div className="p-2 rounded" style={{ background: 'rgba(255,255,255,0.6)' }}>
+                    <small className="text-muted d-block" style={{ fontSize: '0.7rem', letterSpacing: '0.05em' }}>EMAIL</small>
+                    <span style={{ fontSize: '0.85rem' }}>{rcStatus.rc_email}</span>
+                  </div>
+                </div>
+              )}
+              {rcStatus.rc_phone_number && (
+                <div className="col-md-6">
+                  <div className="p-2 rounded" style={{ background: 'rgba(255,255,255,0.6)' }}>
+                    <small className="text-muted d-block" style={{ fontSize: '0.7rem', letterSpacing: '0.05em' }}>SMS NUMBER</small>
+                    <span style={{ fontSize: '0.85rem' }}>{rcStatus.rc_phone_number}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="d-flex gap-2">
+              <button className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                onClick={handleConnectRC} disabled={rcConnecting}>
+                <i className="bi bi-arrow-repeat"></i> Reconnect
+              </button>
+              <button className="btn btn-outline-danger btn-sm d-flex align-items-center gap-1"
+                onClick={handleDisconnectRC} disabled={rcDisconnecting}>
+                <i className="bi bi-x-circle"></i>
+                {rcDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <i className="bi bi-telephone-x" style={{ fontSize: '2rem', color: '#8e8e93' }}></i>
+            <p className="text-muted mt-2 mb-3">Connect your RingCentral account to enable click-to-call features.</p>
+            <button className="btn btn-primary btn-sm d-flex align-items-center gap-2 mx-auto"
+              onClick={handleConnectRC} disabled={rcConnecting}>
+              <i className="bi bi-telephone-plus"></i>
+              {rcConnecting ? 'Connecting...' : 'Connect RingCentral'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="table-container p-4 mt-4" style={{ maxWidth: '600px' }}>

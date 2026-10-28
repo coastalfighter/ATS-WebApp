@@ -1,6 +1,7 @@
 import logging
 import requests
 from django.conf import settings as django_settings
+from django.utils import timezone
 from candidates.models import AppSetting
 
 logger = logging.getLogger('ats')
@@ -17,8 +18,64 @@ class RingCentralService:
         return server_url, client_id, client_secret, jwt_token
 
     @classmethod
-    def _get_access_token(cls):
+    def _refresh_user_token(cls, connection):
+        server_url, client_id, client_secret, _ = cls._get_config()
+        if not client_id:
+            client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
+        if not client_secret:
+            client_secret = getattr(django_settings, 'RINGCENTRAL_CLIENT_SECRET', '')
+
+        _, refresh_token = connection.get_tokens()
+        if not refresh_token:
+            connection.is_connected = False
+            connection.save(update_fields=['is_connected'])
+            return None
+
+        try:
+            resp = requests.post(
+                f'{server_url}/restapi/oauth/token',
+                data={
+                    'grant_type': 'refresh_token',
+                    'refresh_token': refresh_token,
+                },
+                auth=(client_id, client_secret),
+                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            token_data = resp.json()
+            new_access = token_data.get('access_token', '')
+            new_refresh = token_data.get('refresh_token', refresh_token)
+            expires_in = token_data.get('expires_in', 3600)
+            connection.set_tokens(new_access, new_refresh)
+            connection.token_expires_at = timezone.now() + timezone.timedelta(seconds=expires_in)
+            connection.save(update_fields=['_encrypted_tokens', 'token_expires_at'])
+            return new_access
+        except Exception as e:
+            logger.warning(f'RC token refresh failed for user {connection.user_id}: {e}')
+            connection.is_connected = False
+            connection.save(update_fields=['is_connected'])
+            return None
+
+    @classmethod
+    def _get_access_token(cls, user=None):
         server_url, client_id, client_secret, jwt_token = cls._get_config()
+
+        if user:
+            from integrations.models import RingCentralConnection
+            try:
+                conn = RingCentralConnection.objects.get(user=user, is_connected=True)
+                access_token, _ = conn.get_tokens()
+                if access_token:
+                    if conn.token_expires_at and conn.token_expires_at <= timezone.now():
+                        access_token = cls._refresh_user_token(conn)
+                        if not access_token:
+                            return None, None
+                    if not server_url:
+                        server_url = 'https://platform.ringcentral.com'
+                    return access_token, server_url
+            except RingCentralConnection.DoesNotExist:
+                pass
 
         if not all([client_id, client_secret, jwt_token]):
             rc_client_id = getattr(django_settings, 'RINGCENTRAL_CLIENT_ID', '')
@@ -45,8 +102,8 @@ class RingCentralService:
         return resp.json()['access_token'], server_url
 
     @classmethod
-    def initiate_ringout(cls, from_number, to_number):
-        token, server_url = cls._get_access_token()
+    def initiate_ringout(cls, from_number, to_number, user=None):
+        token, server_url = cls._get_access_token(user=user)
         if not token:
             return None
 
@@ -69,8 +126,8 @@ class RingCentralService:
         }
 
     @classmethod
-    def get_call_status(cls, session_id):
-        token, server_url = cls._get_access_token()
+    def get_call_status(cls, session_id, user=None):
+        token, server_url = cls._get_access_token(user=user)
         if not token:
             return None
 

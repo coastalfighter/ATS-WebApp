@@ -5,6 +5,9 @@ from .views import (
     RingCentralCallView,
     RingCentralStatusView,
     SyncCallLogsView,
+    RingCentralAuthorizeView,
+    RingCentralCallbackView,
+    RingCentralConnectionView,
     EmailTemplateViewSet,
 )
 
@@ -13,6 +16,9 @@ router.register('credentials', IntegrationCredentialViewSet, basename='integrati
 router.register('email-templates', EmailTemplateViewSet, basename='email-template')
 
 urlpatterns = [
+    path('ringcentral/authorize/', RingCentralAuthorizeView.as_view(), name='ringcentral-authorize'),
+    path('ringcentral/callback/', RingCentralCallbackView.as_view(), name='ringcentral-callback'),
+    path('ringcentral/connection/', RingCentralConnectionView.as_view(), name='ringcentral-connection'),
     path('ringcentral/call/', RingCentralCallView.as_view(), name='ringcentral-call'),
     path('ringcentral/status/', RingCentralStatusView.as_view(), name='ringcentral-status'),
     path('ringcentral/sync/', SyncCallLogsView.as_view(), name='ringcentral-sync'),
