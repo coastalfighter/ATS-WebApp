@@ -76,7 +76,7 @@ class RingCentralCallView(generics.GenericAPIView):
         try:
             result = RingCentralService.initiate_ringout(from_number, candidate.phone, user=request.user)
             if result is None:
-                return Response({'detail': 'RingCentral not configured. Connect RingCentral in your profile.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                return Response({'detail': 'RingCentral not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
             from interviews.models import CallLog
             CallLog.objects.create(
@@ -91,6 +91,17 @@ class RingCentralCallView(generics.GenericAPIView):
             )
 
             return Response(result)
+        except PermissionError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except requests.RequestException as e:
+            logger.exception(f'RingCentral call failed: {e}')
+            detail = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    detail = e.response.json().get('message', detail)
+                except Exception:
+                    pass
+            return Response({'detail': f'Call failed: {detail}'}, status=status.HTTP_502_BAD_GATEWAY)
         except Exception as e:
             logger.exception(f'RingCentral call failed: {e}')
             return Response({'detail': f'Call failed: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
