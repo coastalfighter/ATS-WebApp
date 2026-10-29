@@ -176,11 +176,11 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            create_zoom_meeting_task.delay(interview.id)
-            create_calendar_event_task.delay(interview.id)
-            send_interview_confirmation_email.delay(interview.id)
+            create_zoom_meeting_task(interview.id)
+            create_calendar_event_task(interview.id)
+            send_interview_confirmation_email(interview.id)
         except Exception:
-            logger.warning(f'Failed to queue async tasks for interview {interview.id} (Redis/Celery unavailable)')
+            logger.warning(f'Failed to run post-confirm tasks for interview {interview.id}', exc_info=True)
 
         from candidates.constants import (
             PIPELINE_INTERESTED, PIPELINE_SCREENING_SCHEDULED,

@@ -63,20 +63,20 @@ class InterviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         interview = serializer.save(created_by=self.request.user)
         try:
-            create_zoom_meeting_task.delay(interview.id)
-            create_calendar_event_task.delay(interview.id)
-            send_interview_confirmation_email.delay(interview.id)
+            create_zoom_meeting_task(interview.id)
+            create_calendar_event_task(interview.id)
+            send_interview_confirmation_email(interview.id)
         except Exception:
-            logger.warning(f'Failed to queue async tasks for interview {interview.id} (Redis/Celery unavailable)')
+            logger.warning(f'Failed to run post-create tasks for interview {interview.id}', exc_info=True)
 
     def perform_update(self, serializer):
         interview = serializer.save()
         try:
-            update_zoom_meeting_task.delay(interview.id)
-            update_calendar_event_task.delay(interview.id)
-            send_interview_reschedule_email.delay(interview.id)
+            update_zoom_meeting_task(interview.id)
+            update_calendar_event_task(interview.id)
+            send_interview_reschedule_email(interview.id)
         except Exception:
-            logger.warning(f'Failed to queue async tasks for interview {interview.id} (Redis/Celery unavailable)')
+            logger.warning(f'Failed to run post-update tasks for interview {interview.id}', exc_info=True)
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
@@ -86,15 +86,15 @@ class InterviewViewSet(viewsets.ModelViewSet):
 
         try:
             if interview.zoom_meeting_id:
-                delete_zoom_meeting_task.delay(
+                delete_zoom_meeting_task(
                     interview.zoom_meeting_id,
                     zoom_account_id=interview.zoom_account_id,
                 )
             if interview.google_event_id:
-                delete_calendar_event_task.delay(interview.google_event_id)
-            send_interview_cancellation_email.delay(interview.id)
+                delete_calendar_event_task(interview.google_event_id)
+            send_interview_cancellation_email(interview.id)
         except Exception:
-            logger.warning(f'Failed to queue cancellation tasks for interview {interview.id} (Redis/Celery unavailable)')
+            logger.warning(f'Failed to run cancellation tasks for interview {interview.id}', exc_info=True)
 
         return Response(InterviewSerializer(interview).data)
 
@@ -107,11 +107,11 @@ class InterviewViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            send_interview_reminder_email.delay(interview.id)
+            send_interview_reminder_email(interview.id)
         except Exception:
-            logger.warning(f'Failed to queue reminder for interview {interview.id} (Redis/Celery unavailable)')
+            logger.warning(f'Failed to send reminder for interview {interview.id}', exc_info=True)
             return Response({'detail': 'Email service temporarily unavailable. Reminder not sent.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        return Response({'detail': 'Reminder queued for sending.'})
+        return Response({'detail': 'Reminder sent.'})
 
 
 class EmailLogViewSet(viewsets.ReadOnlyModelViewSet):

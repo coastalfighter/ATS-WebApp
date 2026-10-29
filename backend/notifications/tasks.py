@@ -1,5 +1,4 @@
 import logging
-from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -7,8 +6,7 @@ from django.utils import timezone
 logger = logging.getLogger('ats')
 
 
-@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,), retry_backoff=True)
-def send_notification_email(self, notification_id):
+def send_notification_email(notification_id):
     from .models import Notification
     try:
         notification = Notification.objects.select_related('recipient').get(id=notification_id)
@@ -36,7 +34,6 @@ def send_notification_email(self, notification_id):
         raise
 
 
-@shared_task
 def send_follow_up_reminders():
     from candidates.models import Candidate
     from .services import NotificationService
@@ -63,7 +60,6 @@ def send_follow_up_reminders():
     return count
 
 
-@shared_task
 def send_interview_reminders():
     from interviews.models import Interview
     from .services import NotificationService

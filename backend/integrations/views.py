@@ -158,10 +158,11 @@ class SyncCallLogsView(generics.GenericAPIView):
     def post(self, request):
         from .tasks import sync_ringcentral_call_logs
         try:
-            sync_ringcentral_call_logs.delay()
+            count = sync_ringcentral_call_logs()
+            return Response({'detail': f'Call log sync complete. {count} new records.'})
         except Exception:
-            return Response({'detail': 'Task queue unavailable. Please try again later.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        return Response({'detail': 'Call log sync initiated.'})
+            logger.exception('Call log sync failed')
+            return Response({'detail': 'Call log sync failed. Please try again later.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RingCentralAuthorizeView(generics.GenericAPIView):

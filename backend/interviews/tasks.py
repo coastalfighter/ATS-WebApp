@@ -1,45 +1,38 @@
 import logging
-from celery import shared_task
 
 logger = logging.getLogger('ats')
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def send_interview_confirmation_email(self, interview_id):
+def send_interview_confirmation_email(interview_id):
     from .models import Interview
     from .services.email_service import EmailService
     interview = Interview.objects.select_related('candidate', 'zoom_account').get(id=interview_id)
     EmailService.send_interview_confirmation(interview)
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def send_interview_cancellation_email(self, interview_id):
+def send_interview_cancellation_email(interview_id):
     from .models import Interview
     from .services.email_service import EmailService
     interview = Interview.objects.select_related('candidate', 'zoom_account').get(id=interview_id)
     EmailService.send_interview_cancellation(interview)
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def send_interview_reschedule_email(self, interview_id):
+def send_interview_reschedule_email(interview_id):
     from .models import Interview
     from .services.email_service import EmailService
     interview = Interview.objects.select_related('candidate', 'zoom_account').get(id=interview_id)
     EmailService.send_interview_reschedule(interview)
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def send_interview_reminder_email(self, interview_id):
+def send_interview_reminder_email(interview_id):
     from .models import Interview
     from .services.email_service import EmailService
     interview = Interview.objects.select_related('candidate', 'zoom_account').get(id=interview_id)
     EmailService.send_interview_reminder(interview)
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def create_zoom_meeting_task(self, interview_id):
+def create_zoom_meeting_task(interview_id):
     from datetime import timedelta
-    from django.db.models import Q
     from .models import Interview, ZoomAccount
     from candidates.models import CandidateActivityLog
     from candidates.constants import ACTION_ZOOM_MEETING_CREATED
@@ -77,8 +70,7 @@ def create_zoom_meeting_task(self, interview_id):
         )
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def create_calendar_event_task(self, interview_id):
+def create_calendar_event_task(interview_id):
     from .models import Interview
     from .services.calendar_service import GoogleCalendarService
     from candidates.models import CandidateActivityLog
@@ -104,8 +96,7 @@ def create_calendar_event_task(self, interview_id):
         )
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def update_zoom_meeting_task(self, interview_id):
+def update_zoom_meeting_task(interview_id):
     from .models import Interview
     interview = Interview.objects.select_related('zoom_account').get(id=interview_id)
     if interview.zoom_account and interview.zoom_account.personal_meeting_link:
@@ -113,8 +104,7 @@ def update_zoom_meeting_task(self, interview_id):
         interview.save(update_fields=['zoom_join_url'])
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def update_calendar_event_task(self, interview_id):
+def update_calendar_event_task(interview_id):
     from .models import Interview
     from .services.calendar_service import GoogleCalendarService
 
@@ -128,18 +118,15 @@ def update_calendar_event_task(self, interview_id):
         )
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def delete_zoom_meeting_task(self, meeting_id, zoom_account_id=None):
+def delete_zoom_meeting_task(meeting_id, zoom_account_id=None):
     pass
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def delete_calendar_event_task(self, event_id):
+def delete_calendar_event_task(event_id):
     from .services.calendar_service import GoogleCalendarService
     GoogleCalendarService.delete_event(event_id)
 
 
-@shared_task
 def send_upcoming_reminders():
     from django.utils import timezone
     from datetime import timedelta
@@ -156,11 +143,10 @@ def send_upcoming_reminders():
     ).select_related('candidate')
 
     for interview in interviews:
-        send_interview_reminder_email.delay(interview.id)
+        send_interview_reminder_email(interview.id)
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def send_generic_email(self, recipient, subject, body, candidate_id=None, email_type='general', sent_by_id=None):
+def send_generic_email(recipient, subject, body, candidate_id=None, email_type='general', sent_by_id=None):
     from .services.email_service import EmailService
     from candidates.models import Candidate
     from accounts.models import User

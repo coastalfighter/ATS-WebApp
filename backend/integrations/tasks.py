@@ -1,13 +1,11 @@
 import logging
-from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
 
 logger = logging.getLogger('ats')
 
 
-@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,), retry_backoff=True)
-def sync_ringcentral_call_logs(self):
+def sync_ringcentral_call_logs():
     from .services.ringcentral_service import RingCentralService
     from interviews.models import CallLog
     from candidates.models import Candidate
@@ -62,7 +60,7 @@ def sync_ringcentral_call_logs(self):
             status=call_status,
             provider='ringcentral',
             provider_call_id=call_id,
-            notes=f'Auto-synced from RingCentral',
+            notes='Auto-synced from RingCentral',
         )
         created_count += 1
 

@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
-    'django_celery_beat',
+
     'accounts',
     'candidates',
     'interviews',
@@ -188,16 +188,6 @@ RINGCENTRAL_JWT_TOKEN = os.environ.get('RINGCENTRAL_JWT_TOKEN', '')
 
 DUPLICATE_DETECTION_STRATEGY = os.environ.get('DUPLICATE_DETECTION_STRATEGY', 'email')
 
-# Celery
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 300
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Encryption
 ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', '')

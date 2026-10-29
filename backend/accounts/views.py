@@ -176,7 +176,7 @@ class ForgotPasswordView(APIView):
 
         try:
             from interviews.tasks import send_generic_email
-            send_generic_email.delay(
+            send_generic_email(
                 recipient=user.email,
                 subject='Password Reset - ATS System',
                 body=(
@@ -190,7 +190,7 @@ class ForgotPasswordView(APIView):
                 email_type='password_reset',
             )
         except Exception:
-            logger.warning(f'Failed to queue password reset email for {user.email} (Redis/Celery unavailable)')
+            logger.warning(f'Failed to send password reset email for {user.email}', exc_info=True)
 
         return Response({'detail': 'If an account with that email exists, a reset link has been sent.'})
 
