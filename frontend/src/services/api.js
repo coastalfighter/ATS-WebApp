@@ -233,6 +233,7 @@ export const integrationsAPI = {
   updateCredential: (id, data) => api.patch(`/integrations/credentials/${id}/`, data),
   verifyCredential: (id) => api.post(`/integrations/credentials/${id}/verify/`),
   initiateCall: (data) => api.post('/integrations/ringcentral/call/', data),
+  logCall: (data) => api.post('/integrations/ringcentral/log-call/', data),
   callStatus: (params) => api.get('/integrations/ringcentral/status/', { params }),
   syncCallLogs: () => api.post('/integrations/ringcentral/sync/'),
   rcAuthorize: (params) => api.get('/integrations/ringcentral/authorize/', { params }),

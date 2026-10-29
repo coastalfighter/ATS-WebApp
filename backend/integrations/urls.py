@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     IntegrationCredentialViewSet,
     RingCentralCallView,
+    LogCallView,
     RingCentralStatusView,
     SyncCallLogsView,
     RingCentralAuthorizeView,
@@ -20,6 +21,7 @@ urlpatterns = [
     path('ringcentral/callback/', RingCentralCallbackView.as_view(), name='ringcentral-callback'),
     path('ringcentral/connection/', RingCentralConnectionView.as_view(), name='ringcentral-connection'),
     path('ringcentral/call/', RingCentralCallView.as_view(), name='ringcentral-call'),
+    path('ringcentral/log-call/', LogCallView.as_view(), name='ringcentral-log-call'),
     path('ringcentral/status/', RingCentralStatusView.as_view(), name='ringcentral-status'),
     path('ringcentral/sync/', SyncCallLogsView.as_view(), name='ringcentral-sync'),
     path('', include(router.urls)),

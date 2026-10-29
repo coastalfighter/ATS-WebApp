@@ -107,6 +107,33 @@ class RingCentralCallView(generics.GenericAPIView):
             return Response({'detail': f'Call failed: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
 
 
+class LogCallView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        candidate_id = request.data.get('candidate_id')
+        if not candidate_id:
+            return Response({'detail': 'candidate_id required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from candidates.models import Candidate
+        try:
+            candidate = Candidate.objects.get(id=candidate_id)
+        except Candidate.DoesNotExist:
+            return Response({'detail': 'Candidate not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        from interviews.models import CallLog
+        CallLog.objects.create(
+            candidate=candidate,
+            phone_number=candidate.phone or '',
+            direction='outbound',
+            status='completed',
+            provider='ringcentral',
+            initiated_by=request.user,
+            notes=f'Call to {candidate.phone}',
+        )
+        return Response({'status': 'logged'})
+
+
 class RingCentralStatusView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
